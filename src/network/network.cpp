@@ -35,6 +35,7 @@
 #include "../core/pool_func.hpp"
 #include "../gfx_func.h"
 #include "../error.h"
+#include "../misc_cmd.h"
 #include <charconv>
 #include <sstream>
 #include <iomanip>
@@ -394,7 +395,7 @@ static void CheckPauseHelper(bool pause, PauseMode pm)
 {
 	if (pause == ((_pause_mode & pm) != PM_UNPAUSED)) return;
 
-	DoCommandP(0, pm, pause ? 1 : 0, CMD_PAUSE);
+	Command<CMD_PAUSE>::Post(pm, pause);
 }
 
 /**
@@ -635,6 +636,7 @@ public:
 	{
 		NetworkGameList *item = NetworkGameListAddItem(connection_string);
 		item->status = NGLS_OFFLINE;
+		item->refreshing = false;
 
 		UpdateNetworkGameWindow();
 	}
@@ -652,6 +654,10 @@ public:
 void NetworkQueryServer(const std::string &connection_string)
 {
 	if (!_network_available) return;
+
+	/* Mark the entry as refreshing, so the GUI can show the refresh is pending. */
+	NetworkGameList *item = NetworkGameListAddItem(connection_string);
+	item->refreshing = true;
 
 	new TCPQueryConnecter(connection_string);
 }
@@ -1059,8 +1065,8 @@ void NetworkGameLoop()
 		while (f != nullptr && !feof(f)) {
 			if (_date == next_date && _date_fract == next_date_fract) {
 				if (cp != nullptr) {
-					NetworkSendCommand(cp->tile, cp->p1, cp->p2, cp->cmd & ~CMD_FLAGS_MASK, nullptr, cp->text, cp->company);
-					Debug(desync, 0, "Injecting: {:08x}; {:02x}; {:02x}; {:06x}; {:08x}; {:08x}; {:08x}; \"{}\" ({})", _date, _date_fract, (int)_current_company, cp->tile, cp->p1, cp->p2, cp->cmd, cp->text, GetCommandName(cp->cmd));
+					NetworkSendCommand(cp->cmd, cp->err_msg, nullptr, cp->company, cp->data);
+					Debug(desync, 0, "Injecting: {:08x}; {:02x}; {:02x}; {:08x}; {:06x}; {} ({})", _date, _date_fract, (int)_current_company, cp->cmd, cp->tile, FormatArrayAsHex(cp->data), GetCommandName(cp->cmd));
 					delete cp;
 					cp = nullptr;
 				}
@@ -1068,7 +1074,7 @@ void NetworkGameLoop()
 					if (sync_state[0] == _random.state[0] && sync_state[1] == _random.state[1]) {
 						Debug(desync, 0, "Sync check: {:08x}; {:02x}; match", _date, _date_fract);
 					} else {
-						Debug(desync, 0, "Sync check: {:08x}; {:02x}; mismatch expected {{:08x}, {:08x}}, got {{:08x}, {:08x}}",
+						Debug(desync, 0, "Sync check: {:08x}; {:02x}; mismatch expected {{{:08x}, {:08x}}}, got {{{:08x}, {:08x}}}",
 									_date, _date_fract, sync_state[0], sync_state[1], _random.state[0], _random.state[1]);
 						NOT_REACHED();
 					}
@@ -1098,14 +1104,22 @@ void NetworkGameLoop()
 				if (*p == ' ') p++;
 				cp = new CommandPacket();
 				int company;
-				char buffer[128];
-				int ret = sscanf(p, "%x; %x; %x; %x; %x; %x; %x; \"%127[^\"]\"", &next_date, &next_date_fract, &company, &cp->tile, &cp->p1, &cp->p2, &cp->cmd, buffer);
-				cp->text = buffer;
-				/* There are 8 pieces of data to read, however the last is a
-				 * string that might or might not exist. Ignore it if that
-				 * string misses because in 99% of the time it's not used. */
-				assert(ret == 8 || ret == 7);
+				uint cmd;
+				char buffer[256];
+				int ret = sscanf(p, "%x; %x; %x; %x; %x; %x; %255s", &next_date, &next_date_fract, &company, &cmd, &cp->err_msg, &cp->tile, buffer);
+				assert(ret == 6);
 				cp->company = (CompanyID)company;
+				cp->cmd = (Commands)cmd;
+
+				/* Parse command data. */
+				std::vector<byte> args;
+				size_t arg_len = strlen(buffer);
+				for (size_t i = 0; i + 1 < arg_len; i += 2) {
+					byte e = 0;
+					std::from_chars(buffer + i, buffer + i + 1, e, 16);
+					args.emplace_back(e);
+				}
+				cp->data = args;
 			} else if (strncmp(p, "join: ", 6) == 0) {
 				/* Manually insert a pause when joining; this way the client can join at the exact right time. */
 				int ret = sscanf(p + 6, "%x; %x", &next_date, &next_date_fract);
@@ -1114,8 +1128,7 @@ void NetworkGameLoop()
 				cp = new CommandPacket();
 				cp->company = COMPANY_SPECTATOR;
 				cp->cmd = CMD_PAUSE;
-				cp->p1 = PM_PAUSED_NORMAL;
-				cp->p2 = 1;
+				cp->data = EndianBufferWriter<>::FromValue(CommandTraits<CMD_PAUSE>::Args{ PM_PAUSED_NORMAL, true });
 				_ddc_fastforward = false;
 			} else if (strncmp(p, "sync: ", 6) == 0) {
 				int ret = sscanf(p + 6, "%x; %x; %x; %x", &next_date, &next_date_fract, &sync_state[0], &sync_state[1]);

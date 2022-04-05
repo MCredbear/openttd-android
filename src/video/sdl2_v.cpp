@@ -30,8 +30,6 @@
 
 #include "../safeguards.h"
 
-static bool old_ctrl_pressed;
-
 void VideoDriver_SDL_Base::MakeDirty(int left, int top, int width, int height)
 {
 	Rect r = {left, top, left + width, top + height};
@@ -151,7 +149,6 @@ bool VideoDriver_SDL_Base::CreateMainWindow(uint w, uint h, uint flags)
 		y = r.y + std::max(0, r.h - static_cast<int>(h)) / 4; // decent desktops have taskbars at the bottom
 	}
 
-	SDL_SetHint(SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT, "#canvas");
 	char caption[50];
 	seprintf(caption, lastof(caption), "OpenTTD %s", _openttd_revision);
 	this->sdl_window = SDL_CreateWindow(
@@ -453,21 +450,6 @@ bool VideoDriver_SDL_Base::PollEvent()
 					!IsValidChar(character, CS_ALPHANUMERAL)) {
 					HandleKeypress(keycode, character);
 				}
-				if (ev.key.keysym.sym == SDLK_LCTRL || ev.key.keysym.sym == SDLK_RCTRL) {
-					_ctrl_pressed = true;
-				}
-				if (ev.key.keysym.sym == SDLK_LSHIFT || ev.key.keysym.sym == SDLK_RSHIFT) {
-					_shift_pressed = true;
-				}
-			}
-			break;
-
-		case SDL_KEYUP:
-			if (ev.key.keysym.sym == SDLK_LCTRL || ev.key.keysym.sym == SDLK_RCTRL) {
-				_ctrl_pressed = false;
-			}
-			if (ev.key.keysym.sym == SDLK_LSHIFT || ev.key.keysym.sym == SDLK_RSHIFT) {
-				_shift_pressed = false;
 			}
 			break;
 
@@ -585,7 +567,11 @@ void VideoDriver_SDL_Base::InputLoop()
 	uint32 mod = SDL_GetModState();
 	const Uint8 *keys = SDL_GetKeyboardState(nullptr);
 
-#ifndef __EMSCRIPTEN__
+	bool old_ctrl_pressed = _ctrl_pressed;
+
+	_ctrl_pressed  = !!(mod & KMOD_CTRL);
+	_shift_pressed = !!(mod & KMOD_SHIFT);
+
 #if defined(_DEBUG)
 	this->fast_forward_key_pressed = _shift_pressed;
 #else
@@ -593,7 +579,6 @@ void VideoDriver_SDL_Base::InputLoop()
 	 * to switch to another application. */
 	this->fast_forward_key_pressed = keys[SDL_SCANCODE_TAB] && (mod & KMOD_ALT) == 0;
 #endif /* defined(_DEBUG) */
-#endif // __EMSCRIPTEN__
 
 	/* Determine which directional keys are down. */
 	_dirkeys =
@@ -603,12 +588,6 @@ void VideoDriver_SDL_Base::InputLoop()
 		(keys[SDL_SCANCODE_DOWN]  ? 8 : 0);
 
 	if (old_ctrl_pressed != _ctrl_pressed) HandleCtrlChanged();
-	old_ctrl_pressed = _ctrl_pressed;
-
-	if (!this->set_clipboard_text.empty()) {
-		SDL_SetClipboardText(this->set_clipboard_text.c_str());
-		this->set_clipboard_text = "";
-	}
 }
 
 void VideoDriver_SDL_Base::LoopOnce()
@@ -669,11 +648,6 @@ bool VideoDriver_SDL_Base::ToggleFullscreen(bool fullscreen)
 	/* Remember current window size */
 	if (fullscreen) {
 		SDL_GetWindowSize(this->sdl_window, &w, &h);
-
-#ifdef __EMSCRIPTEN__
-		// This apparently crashes the webapp on iPhone XS with iOS 14.4.2
-		EM_ASM( if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); } );
-#endif
 
 		/* Find fullscreen window size */
 		SDL_DisplayMode dm;

@@ -452,6 +452,8 @@ STR_GROUP_BY_NONE                                               :Нет
 STR_GROUP_BY_SHARED_ORDERS                                      :Общие задания
 
 # Order button in shared orders vehicle list
+STR_GOTO_ORDER_VIEW                                             :{BLACK}Заданий
+STR_GOTO_ORDER_VIEW_TOOLTIP                                     :{BLACK}Показать просмотр заданий
 
 # Tooltips for the main toolbar
 ###length 31
@@ -1298,10 +1300,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Исключи�
 STR_TERRAIN_TYPE_CUSTOM                                         :Установить высоту вручную
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Установленная высота ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :дозволяющее
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :терпимое
 STR_CITY_APPROVAL_HOSTILE                                       :отрицательное
+STR_CITY_APPROVAL_PERMISSIVE                                    :дозволяющее
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Модули ИИ отсутствуют.{}Их можно скачать через систему проверки онлайн-контента.
 
@@ -1892,6 +1894,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Показыв�
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Аварии и катастрофы: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Показывать новости об авариях и катастрофах
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Аварии, произошедшие с транспортом конкурентов: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Показывать новости об авариях, произошедших с транспортными средствами конкурирующих компаний
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Информация о компании: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Показывать новости об основании и риске банкротства транспортных компаний
 
@@ -2406,6 +2411,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Лан�
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Размер карты: {WHITE}{COMMA}×{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Версия сервера: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Адрес сервера: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Код-приглашение: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Дата начала: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Текущая дата: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Игровой скрипт: {WHITE}{STRING} (v{NUM})
@@ -2590,7 +2596,7 @@ STR_NETWORK_ERROR_TIMEOUT_JOIN                                  :{WHITE}Ваш �
 STR_NETWORK_ERROR_INVALID_CLIENT_NAME                           :{WHITE}Неверно указано имя игрока
 
 STR_NETWORK_ERROR_CLIENT_GUI_LOST_CONNECTION_CAPTION            :{WHITE}Подключение утеряно
-STR_NETWORK_ERROR_CLIENT_GUI_LOST_CONNECTION                    :{WHITE}В течение {NUM} секунд{P ы "" ""} не получено никаких данных со стороны сервера
+STR_NETWORK_ERROR_CLIENT_GUI_LOST_CONNECTION                    :{WHITE}За последн{P 0 юю ие ие} {NUM} секунд{P у ы ""} от сервера не получено никаких данных
 
 ###length 21
 STR_NETWORK_ERROR_CLIENT_GENERAL                                :общая ошибка
@@ -2842,6 +2848,7 @@ STR_STATION_CLASS_WAYP                                          :Точки пу
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Выбор сигналов
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Переключить отображение расширенного списка сигналов
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Стандартный семафор{}Не позволяет нескольким поездам одновременно находиться на одном блок-участке.
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Входной семафор{}Открыт, если хотя бы один из выходных сигналов на следующей секции путей открыт. В остальных случаях закрыт.
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Выходной семафор{}Работает как обычный семафор, но его состояние учитывается при работе входных и комбинированных сигналов.
@@ -2855,7 +2862,7 @@ STR_BUILD_SIGNAL_ELECTRIC_COMBO_TOOLTIP                         :{BLACK}Комб
 STR_BUILD_SIGNAL_ELECTRIC_PBS_TOOLTIP                           :{BLACK}Маршрутный светофор{}Позволяет нескольким поездам находиться в одном сигнальном блоке, если каждый из них может зарезервировать безопасный путь. Допускает следование поездов в обе стороны.
 STR_BUILD_SIGNAL_ELECTRIC_PBS_OWAY_TOOLTIP                      :{BLACK}Односторонний маршрутн. светофор{}Позволяет нескольким поездам находиться в одном сигнальном блоке, если каждый из них может зарезервировать безопасный путь. Не допускает следования поездов в обратную сторону.
 STR_BUILD_SIGNAL_CONVERT_TOOLTIP                                :{BLACK}Изменение типа сигнала{}Когда кнопка нажата, щёлкните для преобразования существующего сигнала в сигнал выбранного типа и варианта, или щёлкните с нажатым Ctrl для перебора существующих вариантов. Shift+щелчок - оценка стоимости преобразования.
-STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP                   :{BLACK}Расстояние между сигналами при протягивании.
+STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP                   :{BLACK}Расстояние между сигналами при протягивании
 STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_DECREASE_TOOLTIP          :{BLACK}Уменьшить расстояние между сигналами при протягивании
 STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_INCREASE_TOOLTIP          :{BLACK}Увеличить расстояние между сигналами при протягивании
 
@@ -5773,35 +5780,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings
-STR_ABOUT_MENU_TUTORIAL                                         :Учебник
-STR_SMALLMAP_TOOLTIP_SHOW_LEGEND                                :{BLACK}Показывать миникарту / легенду
-STR_CONFIG_SETTING_VERTICAL_TOOLBAR                             :Вертикальное меню: {STRING}
-STR_CONFIG_SETTING_VERTICAL_TOOLBAR_HELPTEXT                    :Меню разделено на два вертикальных меню по краям экрата
-STR_CONFIG_SETTING_BUTTON_SIZE                                  :Размер кнопок
-STR_CONFIG_SETTING_BUTTON_SIZE_TOOLTIP                          :Размер элементов интерфейса
-STR_CONFIG_SETTING_FONT_SIZE                                    :Размер шрифта
-STR_CONFIG_SETTING_FONT_SIZE_TOOLTIP                            :Размер всех шрифтов в игре
-STR_CONFIG_SETTING_BUILD_CONFIRMATION                           :Подтверждать действия: {STRING}
-STR_CONFIG_SETTING_BUILD_CONFIRMATION_HELPTEXT                  :Показывать окно подтверждения при постройки дорог и станций
-STR_CONFIG_SETTING_VIDEO_8BPP                                   :8 бит
-STR_CONFIG_SETTING_VIDEO_8BPP_HELPTEXT                          :Установить глубину цвета в 16 бит на точку. Этот режим поддерживает анимацию воды
-STR_CONFIG_SETTING_VIDEO_16BPP                                  :16 бит
-STR_CONFIG_SETTING_VIDEO_16BPP_HELPTEXT                         :Установить глубину цвета в 16 бит на точку. Это потребует перезапуска программы. Этот режим не поддерживает анимацию воды
-STR_CONFIG_SETTING_VIDEO_24BPP                                  :24 бит
-STR_CONFIG_SETTING_VIDEO_24BPP_HELPTEXT                         :Установить глубину цвета в 24 бит на точку. Этот режим поддерживает анимацию воды
-STR_TABLET_CLOSE_TOOLTIP                                        :{BLACK}Закрыть все открытые окна (кроме закреплённых)
-STR_TABLET_SHIFT_TOOLTIP                                        :{BLACK}Использовать в качестве кнопки "SHIFT" (оценка стоимости)
-STR_TABLET_CTRL_TOOLTIP                                         :{BLACK}Использовать в качестве кнопки "CTRL"
-STR_TUTORIAL_WINDOW_TITLE                                       :{BLACK}Учебные видео
-STR_TUTORIAL_WINDOW_TOOLTIP                                     :{BLACK}Открыть видеоплеер для просмотра учебного видео
-STR_TUTORIAL_ROADS_AND_STATIONS                                 :{BLACK}Постройка дорог и терминалов, покупка автомобилей
-STR_TUTORIAL_RAILWAYS                                           :{BLACK}Железные дороги и поезда
-STR_TUTORIAL_ROAD_VEHICLES                                      :{BLACK}Автомобили
-STR_TUTORIAL_SHIPS                                              :{BLACK}Корабли и пристани
-STR_TUTORIAL_CARGO                                              :{BLACK}Грузы
-STR_SAVELOAD_LOAD_NETWORK_BUTTON                                :{BLACK}Загрузка из сети
-STR_SAVELOAD_LOAD_NETWORK_TOOLTIP                               :{BLACK}Загрузить игру из сетевого хранилища
-STR_SAVELOAD_SAVE_NETWORK_BUTTON                                :{BLACK}Сохранение в сети
-STR_SAVELOAD_SAVE_NETWORK_TOOLTIP                               :{BLACK}Сохранить игру в сетевое хранилище

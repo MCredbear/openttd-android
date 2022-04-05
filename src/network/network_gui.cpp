@@ -33,10 +33,10 @@
 #include "../genworld.h"
 #include "../map_type.h"
 #include "../guitimer_func.h"
-#include "../settings_gui.h"
 #include "../zoom_func.h"
 #include "../sprite.h"
 #include "../settings_internal.h"
+#include "../company_cmd.h"
 
 #include "../widgets/network_widget.h"
 
@@ -518,14 +518,12 @@ public:
 		switch (widget) {
 			case WID_NG_MATRIX:
 				resize->height = WD_MATRIX_TOP + std::max(GetSpriteSize(SPR_BLOT).height, (uint)FONT_HEIGHT_NORMAL) + WD_MATRIX_BOTTOM;
-				resize->height = GetMinButtonSize(resize->height);
 				fill->height = resize->height;
-				size->height = 5 * resize->height;
+				size->height = 12 * resize->height;
 				break;
 
 			case WID_NG_LASTJOINED:
 				size->height = WD_MATRIX_TOP + std::max(GetSpriteSize(SPR_BLOT).height, (uint)FONT_HEIGHT_NORMAL) + WD_MATRIX_BOTTOM;
-				size->height = GetMinButtonSize(size->height);
 				break;
 
 			case WID_NG_LASTJOINED_SPACER:
@@ -616,9 +614,18 @@ public:
 				sel->info.clients_on >= sel->info.clients_max || // Server full
 				!sel->info.compatible); // Revision mismatch
 
+		this->SetWidgetLoweredState(WID_NG_REFRESH, sel != nullptr && sel->refreshing);
+
 		/* 'NewGRF Settings' button invisible if no NewGRF is used */
 		this->GetWidget<NWidgetStacked>(WID_NG_NEWGRF_SEL)->SetDisplayedPlane(sel == nullptr || sel->status != NGLS_ONLINE || sel->info.grfconfig == nullptr);
 		this->GetWidget<NWidgetStacked>(WID_NG_NEWGRF_MISSING_SEL)->SetDisplayedPlane(sel == nullptr || sel->status != NGLS_ONLINE || sel->info.grfconfig == nullptr || !sel->info.version_compatible || sel->info.compatible);
+
+#ifdef __EMSCRIPTEN__
+		this->SetWidgetDisabledState(WID_NG_SEARCH_INTERNET, true);
+		this->SetWidgetDisabledState(WID_NG_SEARCH_LAN, true);
+		this->SetWidgetDisabledState(WID_NG_ADD, true);
+		this->SetWidgetDisabledState(WID_NG_START, true);
+#endif
 
 		this->DrawWidgets();
 	}
@@ -675,7 +682,8 @@ public:
 			y += FONT_HEIGHT_NORMAL;
 
 			SetDParamStr(0, sel->connection_string);
-			DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, STR_NETWORK_SERVER_LIST_SERVER_ADDRESS); // server address
+			StringID invite_or_address = StrStartsWith(sel->connection_string, "+") ? STR_NETWORK_SERVER_LIST_INVITE_CODE : STR_NETWORK_SERVER_LIST_SERVER_ADDRESS;
+			DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, invite_or_address); // server address / invite code
 			y += FONT_HEIGHT_NORMAL;
 
 			SetDParam(0, sel->info.start_date);
@@ -786,7 +794,7 @@ public:
 				break;
 
 			case WID_NG_REFRESH: // Refresh
-				if (this->server != nullptr) NetworkQueryServer(this->server->connection_string);
+				if (this->server != nullptr && !this->server->refreshing) NetworkQueryServer(this->server->connection_string);
 				break;
 
 			case WID_NG_NEWGRF: // NewGRF Settings
@@ -948,7 +956,7 @@ static const NWidgetPart _nested_network_game_widgets[] = {
 					EndContainer(),
 					NWidget(WWT_PANEL, COLOUR_LIGHT_BLUE, WID_NG_DETAILS),
 						NWidget(NWID_VERTICAL, NC_EQUALSIZE), SetPIP(5, 5, 5),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_NG_DETAILS_SPACER), SetMinimalSize(140, 0), SetResize(0, 1), SetFill(1, 1), // Make sure it's at least this wide
+							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_NG_DETAILS_SPACER), SetMinimalSize(140, 0), SetMinimalTextLines(15, 24 + WD_PAR_VSEP_NORMAL), SetResize(0, 1), SetFill(1, 1), // Make sure it's at least this wide
 							NWidget(NWID_HORIZONTAL, NC_NONE), SetPIP(5, 5, 5),
 								NWidget(NWID_SELECTION, INVALID_COLOUR, WID_NG_NEWGRF_MISSING_SEL),
 									NWidget(WWT_PUSHTXTBTN, COLOUR_WHITE, WID_NG_NEWGRF_MISSING), SetFill(1, 0), SetDataTip(STR_NEWGRF_SETTINGS_FIND_MISSING_CONTENT_BUTTON, STR_NEWGRF_SETTINGS_FIND_MISSING_CONTENT_TOOLTIP),
@@ -1052,9 +1060,7 @@ struct NetworkStartServerWindow : public Window {
 			case WID_NSS_CONNTYPE_BTN:
 				*size = maxdim(maxdim(GetStringBoundingBox(STR_NETWORK_SERVER_VISIBILITY_LOCAL), GetStringBoundingBox(STR_NETWORK_SERVER_VISIBILITY_PUBLIC)), GetStringBoundingBox(STR_NETWORK_SERVER_VISIBILITY_INVITE_ONLY));
 				size->width += padding.width;
-				size->width = GetMinButtonSize(size->width);
 				size->height += padding.height;
-				size->height = GetMinButtonSize(size->height);
 				break;
 		}
 	}
@@ -1221,7 +1227,7 @@ static const NWidgetPart _nested_network_start_server_window_widgets[] = {
 				EndContainer(),
 				NWidget(NWID_VERTICAL), SetPIP(0, 1, 0),
 					NWidget(NWID_SPACER), SetFill(1, 1),
-					NWidget(WWT_PUSHTXTBTN, COLOUR_WHITE, WID_NSS_SETPWD), SetSizingType(NWST_BUTTON), SetFill(1, 0), SetDataTip(STR_NETWORK_START_SERVER_SET_PASSWORD, STR_NETWORK_START_SERVER_PASSWORD_TOOLTIP),
+					NWidget(WWT_PUSHTXTBTN, COLOUR_WHITE, WID_NSS_SETPWD), SetFill(1, 0), SetDataTip(STR_NETWORK_START_SERVER_SET_PASSWORD, STR_NETWORK_START_SERVER_PASSWORD_TOOLTIP),
 				EndContainer(),
 			EndContainer(),
 
@@ -1295,53 +1301,49 @@ static const NWidgetPart _nested_client_list_widgets[] = {
 		NWidget(WWT_STICKYBOX, COLOUR_GREY),
 	EndContainer(),
 	NWidget(WWT_PANEL, COLOUR_GREY),
-		NWidget(NWID_HORIZONTAL),
-			NWidget(NWID_VERTICAL),
-				NWidget(WWT_FRAME, COLOUR_GREY), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER, STR_NULL), SetPadding(4, 4, 0, 4), SetPIP(0, 2, 0),
+		NWidget(WWT_FRAME, COLOUR_GREY), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER, STR_NULL), SetPadding(4, 4, 0, 4), SetPIP(0, 2, 0),
+			NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
+				NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER_NAME, STR_NULL),
+				NWidget(NWID_SPACER), SetMinimalSize(10, 0),
+				NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_SERVER_NAME), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetDataTip(STR_BLACK_RAW_STRING, STR_NETWORK_CLIENT_LIST_SERVER_NAME_TOOLTIP), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
+				NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_CL_SERVER_NAME_EDIT), SetMinimalSize(12, 14), SetDataTip(SPR_RENAME, STR_NETWORK_CLIENT_LIST_SERVER_NAME_EDIT_TOOLTIP),
+			EndContainer(),
+			NWidget(NWID_SELECTION, INVALID_COLOUR, WID_CL_SERVER_SELECTOR),
+				NWidget(NWID_VERTICAL),
 					NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
-						NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER_NAME, STR_NULL),
-						NWidget(NWID_SPACER), SetMinimalSize(10, 0),
-						NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_SERVER_NAME), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetDataTip(STR_BLACK_RAW_STRING, STR_NETWORK_CLIENT_LIST_SERVER_NAME_TOOLTIP), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
-						NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_CL_SERVER_NAME_EDIT), SetMinimalSize(12, 14), SetDataTip(SPR_RENAME, STR_NETWORK_CLIENT_LIST_SERVER_NAME_EDIT_TOOLTIP),
+						NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER_VISIBILITY, STR_NULL),
+						NWidget(NWID_SPACER), SetMinimalSize(10, 0), SetFill(1, 0), SetResize(1, 0),
+						NWidget(WWT_DROPDOWN, COLOUR_GREY, WID_CL_SERVER_VISIBILITY), SetDataTip(STR_BLACK_STRING, STR_NETWORK_CLIENT_LIST_SERVER_VISIBILITY_TOOLTIP),
 					EndContainer(),
-					NWidget(NWID_SELECTION, INVALID_COLOUR, WID_CL_SERVER_SELECTOR),
-						NWidget(NWID_VERTICAL),
-							NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
-								NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER_VISIBILITY, STR_NULL),
-								NWidget(NWID_SPACER), SetMinimalSize(10, 0), SetFill(1, 0), SetResize(1, 0),
-								NWidget(WWT_DROPDOWN, COLOUR_GREY, WID_CL_SERVER_VISIBILITY), SetDataTip(STR_BLACK_STRING, STR_NETWORK_CLIENT_LIST_SERVER_VISIBILITY_TOOLTIP),
-							EndContainer(),
-							NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
-								NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER_INVITE_CODE, STR_NULL),
-								NWidget(NWID_SPACER), SetMinimalSize(10, 0),
-								NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_SERVER_INVITE_CODE), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetDataTip(STR_BLACK_RAW_STRING, STR_NETWORK_CLIENT_LIST_SERVER_INVITE_CODE_TOOLTIP), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
-							EndContainer(),
-							NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
-								NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER_CONNECTION_TYPE, STR_NULL),
-								NWidget(NWID_SPACER), SetMinimalSize(10, 0),
-								NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_SERVER_CONNECTION_TYPE), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetDataTip(STR_BLACK_STRING, STR_NETWORK_CLIENT_LIST_SERVER_CONNECTION_TYPE_TOOLTIP), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
-							EndContainer(),
-						EndContainer(),
-					EndContainer(),
-				EndContainer(),
-				NWidget(WWT_FRAME, COLOUR_GREY), SetDataTip(STR_NETWORK_CLIENT_LIST_PLAYER, STR_NULL), SetPadding(4, 4, 4, 4), SetPIP(0, 2, 0),
 					NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
-						NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_PLAYER_NAME, STR_NULL),
+						NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER_INVITE_CODE, STR_NULL),
 						NWidget(NWID_SPACER), SetMinimalSize(10, 0),
-						NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_CLIENT_NAME), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetDataTip(STR_BLACK_RAW_STRING, STR_NETWORK_CLIENT_LIST_PLAYER_NAME_TOOLTIP), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
-						NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_CL_CLIENT_NAME_EDIT), SetMinimalSize(12, 14), SetDataTip(SPR_RENAME, STR_NETWORK_CLIENT_LIST_PLAYER_NAME_EDIT_TOOLTIP),
+						NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_SERVER_INVITE_CODE), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetDataTip(STR_BLACK_RAW_STRING, STR_NETWORK_CLIENT_LIST_SERVER_INVITE_CODE_TOOLTIP), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
+					EndContainer(),
+					NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
+						NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_SERVER_CONNECTION_TYPE, STR_NULL),
+						NWidget(NWID_SPACER), SetMinimalSize(10, 0),
+						NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_SERVER_CONNECTION_TYPE), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetDataTip(STR_BLACK_STRING, STR_NETWORK_CLIENT_LIST_SERVER_CONNECTION_TYPE_TOOLTIP), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 					EndContainer(),
 				EndContainer(),
 			EndContainer(),
-			NWidget(NWID_HORIZONTAL),
-				NWidget(NWID_VERTICAL),
-					NWidget(WWT_MATRIX, COLOUR_GREY, WID_CL_MATRIX), SetMinimalSize(180, 0), SetResize(1, 1), SetFill(1, 1), SetMatrixDataTip(1, 0, STR_NULL), SetScrollbar(WID_CL_SCROLLBAR),
-					NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_CLIENT_COMPANY_COUNT), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetPadding(2, 1, 2, 1), SetAlignment(SA_CENTER), SetDataTip(STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT, STR_NULL),
-				EndContainer(),
-				NWidget(NWID_VERTICAL),
-					NWidget(NWID_VSCROLLBAR, COLOUR_GREY, WID_CL_SCROLLBAR),
-					NWidget(WWT_RESIZEBOX, COLOUR_GREY),
-				EndContainer(),
+		EndContainer(),
+		NWidget(WWT_FRAME, COLOUR_GREY), SetDataTip(STR_NETWORK_CLIENT_LIST_PLAYER, STR_NULL), SetPadding(4, 4, 4, 4), SetPIP(0, 2, 0),
+			NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
+				NWidget(WWT_TEXT, COLOUR_GREY), SetMinimalTextLines(1, 0), SetDataTip(STR_NETWORK_CLIENT_LIST_PLAYER_NAME, STR_NULL),
+				NWidget(NWID_SPACER), SetMinimalSize(10, 0),
+				NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_CLIENT_NAME), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetDataTip(STR_BLACK_RAW_STRING, STR_NETWORK_CLIENT_LIST_PLAYER_NAME_TOOLTIP), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
+				NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_CL_CLIENT_NAME_EDIT), SetMinimalSize(12, 14), SetDataTip(SPR_RENAME, STR_NETWORK_CLIENT_LIST_PLAYER_NAME_EDIT_TOOLTIP),
+			EndContainer(),
+		EndContainer(),
+		NWidget(NWID_HORIZONTAL),
+			NWidget(NWID_VERTICAL),
+				NWidget(WWT_MATRIX, COLOUR_GREY, WID_CL_MATRIX), SetMinimalSize(180, 0), SetResize(1, 1), SetFill(1, 1), SetMatrixDataTip(1, 0, STR_NULL), SetScrollbar(WID_CL_SCROLLBAR),
+				NWidget(WWT_TEXT, COLOUR_GREY, WID_CL_CLIENT_COMPANY_COUNT), SetFill(1, 0), SetMinimalTextLines(1, 0), SetResize(1, 0), SetPadding(2, 1, 2, 1), SetAlignment(SA_CENTER), SetDataTip(STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT, STR_NULL),
+			EndContainer(),
+			NWidget(NWID_VERTICAL),
+				NWidget(NWID_VSCROLLBAR, COLOUR_GREY, WID_CL_SCROLLBAR),
+				NWidget(WWT_RESIZEBOX, COLOUR_GREY),
 			EndContainer(),
 		EndContainer(),
 	EndContainer(),
@@ -1394,7 +1396,7 @@ static void AdminCompanyResetCallback(Window *w, bool confirmed)
 {
 	if (confirmed) {
 		if (NetworkCompanyHasClients(_admin_company_id)) return;
-		DoCommandP(0, CCA_DELETE | _admin_company_id << 16 | CRR_MANUAL << 24, 0, CMD_COMPANY_CTRL);
+		Command<CMD_COMPANY_CTRL>::Post(CCA_DELETE, _admin_company_id, CRR_MANUAL, INVALID_CLIENT_ID);
 	}
 }
 
@@ -1432,9 +1434,7 @@ public:
 	{
 		Dimension d = GetSpriteSize(sprite);
 		this->height = d.height + ScaleGUITrad(WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM);
-		this->height = GetMinButtonSize(this->height);
 		this->width = d.width + ScaleGUITrad(WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT);
-		this->width = GetMinButtonSize(this->width);
 	}
 	virtual ~ButtonCommon() {}
 
@@ -1536,9 +1536,9 @@ private:
 	static void OnClickCompanyNew(NetworkClientListWindow *w, Point pt, CompanyID company_id)
 	{
 		if (_network_server) {
-			DoCommandP(0, CCA_NEW, _network_own_client_id, CMD_COMPANY_CTRL);
+			Command<CMD_COMPANY_CTRL>::Post(CCA_NEW, INVALID_COMPANY, CRR_NONE, _network_own_client_id);
 		} else {
-			NetworkSendCommand(0, CCA_NEW, 0, CMD_COMPANY_CTRL, nullptr, {}, _local_company);
+			Command<CMD_COMPANY_CTRL>::SendNet(STR_NULL, _local_company, CCA_NEW, INVALID_COMPANY, CRR_NONE, INVALID_CLIENT_ID);
 		}
 	}
 
@@ -1561,7 +1561,7 @@ private:
 		wi_rect.bottom = pt.y;
 
 		w->dd_client_id = client_id;
-		ShowDropDownListAt(w, std::move(list), -1, WID_CL_MATRIX, wi_rect, COLOUR_GREY, true, false);
+		ShowDropDownListAt(w, std::move(list), -1, WID_CL_MATRIX, wi_rect, COLOUR_GREY, true, true);
 	}
 
 	/**
@@ -1583,7 +1583,7 @@ private:
 		wi_rect.bottom = pt.y;
 
 		w->dd_company_id = company_id;
-		ShowDropDownListAt(w, std::move(list), -1, WID_CL_MATRIX, wi_rect, COLOUR_GREY, true, false);
+		ShowDropDownListAt(w, std::move(list), -1, WID_CL_MATRIX, wi_rect, COLOUR_GREY, true, true);
 	}
 	/**
 	 * Chat button on a Client is clicked.
@@ -1679,7 +1679,7 @@ private:
 		NWidgetBase *widget_matrix = this->GetWidget<NWidgetBase>(WID_CL_MATRIX);
 
 		bool rtl = _current_text_dir == TD_RTL;
-		uint x = rtl ? (uint)widget_matrix->pos_x + WD_FRAMERECT_LEFT : widget_matrix->pos_x + widget_matrix->current_x - WD_FRAMERECT_RIGHT;
+		uint x = rtl ? (uint)widget_matrix->pos_x + WD_FRAMERECT_LEFT : widget_matrix->current_x - WD_FRAMERECT_RIGHT;
 
 		/* Find the buttons for this row. */
 		auto button_find = this->buttons.find(index);
@@ -1730,20 +1730,17 @@ public:
 				*size = maxdim(maxdim(GetStringBoundingBox(STR_NETWORK_SERVER_VISIBILITY_LOCAL), GetStringBoundingBox(STR_NETWORK_SERVER_VISIBILITY_PUBLIC)), GetStringBoundingBox(STR_NETWORK_SERVER_VISIBILITY_INVITE_ONLY));
 				size->width += padding.width;
 				size->height += padding.height;
-				size->height = GetMinButtonSize(size->height);
 				break;
 
 			case WID_CL_MATRIX: {
 				uint height = std::max({GetSpriteSize(SPR_COMPANY_ICON).height, GetSpriteSize(SPR_JOIN).height, GetSpriteSize(SPR_ADMIN).height, GetSpriteSize(SPR_CHAT).height});
 				height += ScaleGUITrad(WD_FRAMERECT_TOP) + ScaleGUITrad(WD_FRAMERECT_BOTTOM);
 				this->line_height = std::max(height, (uint)FONT_HEIGHT_NORMAL) + ScaleGUITrad(WD_MATRIX_TOP + WD_MATRIX_BOTTOM);
-				this->line_height = GetMinButtonSize(this->line_height) + ScaleGUITrad(WD_MATRIX_TOP + WD_MATRIX_BOTTOM);
 
 				resize->width = 1;
 				resize->height = this->line_height;
 				fill->height = this->line_height;
 				size->height = std::max(size->height, 5 * this->line_height);
-				size->width = GetMinButtonSize(0) * 4 + GetStringBoundingBox(STR_NETWORK_CLIENT_LIST_NEW_COMPANY).width * 2;
 				break;
 			}
 		}
@@ -1977,7 +1974,7 @@ public:
 			int offset = std::max(0, ((int)(this->line_height + 1) - (int)button->height) / 2);
 
 			DrawFrameRect(left, y + offset, right, y + offset + button->height, button->colour, FR_NONE);
-			DrawSpriteCenteredRect(button->sprite, PAL_NONE, left, y + offset, right, y + offset + button->height);
+			DrawSprite(button->sprite, PAL_NONE, left + ScaleGUITrad(WD_FRAMERECT_LEFT), y + offset + ScaleGUITrad(WD_FRAMERECT_TOP));
 			if (button->disabled) {
 				GfxFillRect(left + 1, y + offset + 1, right - 1, y + offset + button->height - 1, _colour_gradient[button->colour & 0xF][2], FILLRECT_CHECKER);
 			}
@@ -2221,7 +2218,6 @@ struct NetworkJoinStatusWindow : Window {
 	{
 		if (StrEmpty(str)) {
 			NetworkDisconnect();
-			ShowNetworkGameWindow();
 			return;
 		}
 

@@ -796,7 +796,7 @@ STR_SUBSIDY_X4                                                  :x४
 
 ###length 7
 
-###length 3
+###length 4
 
 
 # Settings tree window
@@ -975,6 +975,7 @@ STR_CONFIG_SETTING_COMMAND_PAUSE_LEVEL_ALL_ACTIONS              :सर्व �
 
 
 ###setting-zero-is-special
+
 
 
 

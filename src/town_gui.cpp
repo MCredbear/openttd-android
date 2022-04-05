@@ -33,6 +33,7 @@
 #include "stringfilter_type.h"
 #include "widgets/dropdown_func.h"
 #include "town_kdtree.h"
+#include "town_cmd.h"
 
 #include "widgets/town_widget.h"
 
@@ -53,12 +54,12 @@ static const NWidgetPart _nested_town_authority_widgets[] = {
 		NWidget(WWT_DEFSIZEBOX, COLOUR_BROWN),
 		NWidget(WWT_STICKYBOX, COLOUR_BROWN),
 	EndContainer(),
-	NWidget(WWT_PANEL, COLOUR_BROWN, WID_TA_RATING_INFO), SetMinimalSize(317, 92), SetResize(1, 1), SetFill(1, 1), EndContainer(),
+	NWidget(WWT_PANEL, COLOUR_BROWN, WID_TA_RATING_INFO), SetMinimalSize(317, 92), SetResize(1, 1), EndContainer(),
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_PANEL, COLOUR_BROWN, WID_TA_COMMAND_LIST), SetMinimalSize(305, 52), SetResize(1, 0), SetDataTip(0x0, STR_LOCAL_AUTHORITY_ACTIONS_TOOLTIP), SetScrollbar(WID_TA_SCROLLBAR), EndContainer(),
 		NWidget(NWID_VSCROLLBAR, COLOUR_BROWN, WID_TA_SCROLLBAR),
 	EndContainer(),
-	NWidget(WWT_PANEL, COLOUR_BROWN, WID_TA_ACTION_INFO), SetMinimalSize(317, 52), SetResize(1, 1), SetFill(1, 1), EndContainer(),
+	NWidget(WWT_PANEL, COLOUR_BROWN, WID_TA_ACTION_INFO), SetMinimalSize(317, 52), SetResize(1, 0), EndContainer(),
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_PUSHTXTBTN, COLOUR_BROWN, WID_TA_EXECUTE),  SetMinimalSize(317, 12), SetResize(1, 0), SetFill(1, 0), SetDataTip(STR_LOCAL_AUTHORITY_DO_IT_BUTTON, STR_LOCAL_AUTHORITY_DO_IT_TOOLTIP),
 		NWidget(WWT_RESIZEBOX, COLOUR_BROWN),
@@ -71,7 +72,6 @@ private:
 	Town *town;    ///< Town being displayed.
 	int sel_index; ///< Currently selected town action, \c 0 to \c TACT_COUNT-1, \c -1 means no action selected.
 	Scrollbar *vscroll;
-	uint actions_step;
 	uint displayed_actions_on_previous_painting; ///< Actions that were available on the previous call to OnPaint()
 
 	/**
@@ -100,8 +100,7 @@ public:
 		this->town = Town::Get(window_number);
 		this->InitNested(window_number);
 		this->vscroll = this->GetScrollbar(WID_TA_SCROLLBAR);
-		this->actions_step = GetMinButtonSize(FONT_HEIGHT_NORMAL);
-		this->vscroll->SetCapacity((this->GetWidget<NWidgetBase>(WID_TA_COMMAND_LIST)->current_y - WD_FRAMERECT_TOP - WD_FRAMERECT_BOTTOM) / this->actions_step);
+		this->vscroll->SetCapacity((this->GetWidget<NWidgetBase>(WID_TA_COMMAND_LIST)->current_y - WD_FRAMERECT_TOP - WD_FRAMERECT_BOTTOM) / FONT_HEIGHT_NORMAL);
 	}
 
 	void OnPaint() override
@@ -203,12 +202,12 @@ public:
 			case WID_TA_COMMAND_LIST: {
 				int numact;
 				uint buttons = GetMaskOfTownActions(&numact, _local_company, this->town);
-				int y = Center(r.top, this->actions_step);
+				int y = r.top + WD_FRAMERECT_TOP;
 				int pos = this->vscroll->GetPosition();
 
 				if (--pos < 0) {
 					DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, STR_LOCAL_AUTHORITY_ACTIONS_TITLE);
-					y += this->actions_step;
+					y += FONT_HEIGHT_NORMAL;
 				}
 
 				for (int i = 0; buttons; i++, buttons >>= 1) {
@@ -217,7 +216,7 @@ public:
 					if ((buttons & 1) && --pos < 0) {
 						DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y,
 								STR_LOCAL_AUTHORITY_ACTION_SMALL_ADVERTISING_CAMPAIGN + i, this->sel_index == i ? TC_WHITE : TC_ORANGE);
-						y += this->actions_step;
+						y += FONT_HEIGHT_NORMAL;
 					}
 				}
 				break;
@@ -244,8 +243,7 @@ public:
 			}
 
 			case WID_TA_COMMAND_LIST:
-				resize->height = GetMinButtonSize(FONT_HEIGHT_NORMAL);
-				size->height = WD_FRAMERECT_TOP + 3 * resize->height + WD_FRAMERECT_BOTTOM;
+				size->height = WD_FRAMERECT_TOP + 5 * FONT_HEIGHT_NORMAL + WD_FRAMERECT_BOTTOM;
 				size->width = GetStringBoundingBox(STR_LOCAL_AUTHORITY_ACTIONS_TITLE).width;
 				for (uint i = 0; i < TACT_COUNT; i++ ) {
 					size->width = std::max(size->width, GetStringBoundingBox(STR_LOCAL_AUTHORITY_ACTION_SMALL_ADVERTISING_CAMPAIGN + i).width);
@@ -276,7 +274,7 @@ public:
 			}
 
 			case WID_TA_COMMAND_LIST: {
-				int y = this->GetRowFromWidget(pt.y, WID_TA_COMMAND_LIST, 1, this->actions_step);
+				int y = this->GetRowFromWidget(pt.y, WID_TA_COMMAND_LIST, 1, FONT_HEIGHT_NORMAL);
 				if (!IsInsideMM(y, 0, 5)) return;
 
 				y = GetNthSetBit(GetMaskOfTownActions(nullptr, _local_company, this->town), y + this->vscroll->GetPosition() - 1);
@@ -290,7 +288,7 @@ public:
 			}
 
 			case WID_TA_EXECUTE:
-				DoCommandP(this->town->xy, this->window_number, this->sel_index, CMD_DO_TOWN_ACTION | CMD_MSG(STR_ERROR_CAN_T_DO_THIS));
+				Command<CMD_DO_TOWN_ACTION>::Post(STR_ERROR_CAN_T_DO_THIS, this->town->xy, this->window_number, this->sel_index);
 				break;
 		}
 	}
@@ -477,12 +475,12 @@ public:
 					_warn_town_no_roads = true;
 				}
 
-				DoCommandP(0, this->window_number, 0, CMD_EXPAND_TOWN | CMD_MSG(STR_ERROR_CAN_T_EXPAND_TOWN));
+				Command<CMD_EXPAND_TOWN>::Post(STR_ERROR_CAN_T_EXPAND_TOWN, this->window_number, 0);
 				break;
 			}
 
 			case WID_TV_DELETE: // delete town - only available on Scenario editor
-				DoCommandP(0, this->window_number, 0, CMD_DELETE_TOWN | CMD_MSG(STR_ERROR_TOWN_CAN_T_DELETE));
+				Command<CMD_DELETE_TOWN>::Post(STR_ERROR_TOWN_CAN_T_DELETE, this->window_number);
 				break;
 		}
 	}
@@ -564,7 +562,7 @@ public:
 	{
 		if (str == nullptr) return;
 
-		DoCommandP(0, this->window_number, 0, CMD_RENAME_TOWN | CMD_MSG(STR_ERROR_CAN_T_RENAME_TOWN), nullptr, str);
+		Command<CMD_RENAME_TOWN>::Post(STR_ERROR_CAN_T_RENAME_TOWN, this->window_number, str);
 	}
 };
 
@@ -603,6 +601,7 @@ static const NWidgetPart _nested_town_editor_view_widgets[] = {
 		NWidget(WWT_CLOSEBOX, COLOUR_BROWN),
 		NWidget(WWT_PUSHIMGBTN, COLOUR_BROWN, WID_TV_CHANGE_NAME), SetMinimalSize(12, 14), SetDataTip(SPR_RENAME, STR_TOWN_VIEW_RENAME_TOOLTIP),
 		NWidget(WWT_CAPTION, COLOUR_BROWN, WID_TV_CAPTION), SetDataTip(STR_TOWN_VIEW_TOWN_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_PUSHIMGBTN, COLOUR_BROWN, WID_TV_CENTER_VIEW), SetMinimalSize(12, 14), SetDataTip(SPR_GOTO_LOCATION, STR_TOWN_VIEW_CENTER_TOOLTIP),
 		NWidget(WWT_SHADEBOX, COLOUR_BROWN),
 		NWidget(WWT_DEFSIZEBOX, COLOUR_BROWN),
 		NWidget(WWT_STICKYBOX, COLOUR_BROWN),
@@ -613,12 +612,9 @@ static const NWidgetPart _nested_town_editor_view_widgets[] = {
 		EndContainer(),
 	EndContainer(),
 	NWidget(WWT_PANEL, COLOUR_BROWN, WID_TV_INFO), SetMinimalSize(260, 32), SetResize(1, 0), SetFill(1, 0), EndContainer(),
-	NWidget(NWID_HORIZONTAL),
-		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
-			NWidget(WWT_PUSHIMGBTN, COLOUR_BROWN, WID_TV_CENTER_VIEW), SetMinimalSize(12, 14), SetFill(1, 1), SetResize(1, 0), SetDataTip(SPR_GOTO_LOCATION, STR_TOWN_VIEW_CENTER_TOOLTIP),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_BROWN, WID_TV_EXPAND), SetMinimalSize(80, 12), SetFill(1, 1), SetResize(1, 0), SetDataTip(STR_TOWN_VIEW_EXPAND_BUTTON, STR_TOWN_VIEW_EXPAND_TOOLTIP),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_BROWN, WID_TV_DELETE), SetMinimalSize(80, 12), SetFill(1, 1), SetResize(1, 0), SetDataTip(STR_TOWN_VIEW_DELETE_BUTTON, STR_TOWN_VIEW_DELETE_TOOLTIP),
-		EndContainer(),
+	NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_BROWN, WID_TV_EXPAND), SetMinimalSize(80, 12), SetFill(1, 1), SetResize(1, 0), SetDataTip(STR_TOWN_VIEW_EXPAND_BUTTON, STR_TOWN_VIEW_EXPAND_TOOLTIP),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_BROWN, WID_TV_DELETE), SetMinimalSize(80, 12), SetFill(1, 1), SetResize(1, 0), SetDataTip(STR_TOWN_VIEW_DELETE_BUTTON, STR_TOWN_VIEW_DELETE_TOOLTIP),
 		NWidget(WWT_TEXTBTN, COLOUR_BROWN, WID_TV_CATCHMENT), SetMinimalSize(40, 12), SetFill(1, 1), SetResize(1, 0), SetDataTip(STR_BUTTON_CATCHMENT, STR_TOOLTIP_CATCHMENT),
 		NWidget(WWT_RESIZEBOX, COLOUR_BROWN),
 	EndContainer(),
@@ -651,7 +647,7 @@ static const NWidgetPart _nested_town_directory_widgets[] = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(NWID_VERTICAL),
 			NWidget(NWID_HORIZONTAL),
-				NWidget(WWT_TEXTBTN, COLOUR_BROWN, WID_TD_SORT_ORDER), SetSizingType(NWST_BUTTON), SetDataTip(STR_BUTTON_SORT_BY, STR_TOOLTIP_SORT_ORDER),
+				NWidget(WWT_TEXTBTN, COLOUR_BROWN, WID_TD_SORT_ORDER), SetDataTip(STR_BUTTON_SORT_BY, STR_TOOLTIP_SORT_ORDER),
 				NWidget(WWT_DROPDOWN, COLOUR_BROWN, WID_TD_SORT_CRITERIA), SetDataTip(STR_JUST_STRING, STR_TOOLTIP_SORT_CRITERIA),
 				NWidget(WWT_EDITBOX, COLOUR_BROWN, WID_TD_FILTER), SetFill(1, 0), SetResize(1, 0), SetDataTip(STR_LIST_FILTER_OSKTITLE, STR_LIST_FILTER_TOOLTIP),
 			EndContainer(),
@@ -869,7 +865,6 @@ public:
 				Dimension icon_size = GetSpriteSize(SPR_TOWN_RATING_GOOD);
 				d.width += icon_size.width + 2;
 				d.height = std::max(d.height, icon_size.height);
-				d.height = GetMinButtonSize(d.height);
 				resize->height = d.height;
 				d.height *= 5;
 				d.width += padding.width + WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT;
@@ -1014,7 +1009,7 @@ void ShowTownDirectory()
 	new TownDirectoryWindow(&_town_directory_desc);
 }
 
-void CcFoundTown(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcFoundTown(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Failed()) return;
 
@@ -1022,9 +1017,9 @@ void CcFoundTown(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2
 	if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 }
 
-void CcFoundRandomTown(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcFoundRandomTown(Commands cmd, const CommandCost &result, Money, TownID town_id)
 {
-	if (result.Succeeded()) ScrollMainWindowToTile(Town::Get(_new_town_id)->xy);
+	if (result.Succeeded()) ScrollMainWindowToTile(Town::Get(town_id)->xy);
 }
 
 static const NWidgetPart _nested_found_town_widgets[] = {
@@ -1035,65 +1030,61 @@ static const NWidgetPart _nested_found_town_widgets[] = {
 		NWidget(WWT_STICKYBOX, COLOUR_DARK_GREEN),
 	EndContainer(),
 	/* Construct new town(s) buttons. */
-	NWidget(NWID_HORIZONTAL),
-		NWidget(WWT_PANEL, COLOUR_DARK_GREEN),
-			NWidget(NWID_SPACER), SetMinimalSize(0, 2),
-			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_NEW_TOWN), SetMinimalSize(156, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_NEW_TOWN_BUTTON, STR_FOUND_TOWN_NEW_TOWN_TOOLTIP), SetPadding(0, 2, 1, 2),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_TF_RANDOM_TOWN), SetMinimalSize(156, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_RANDOM_TOWN_BUTTON, STR_FOUND_TOWN_RANDOM_TOWN_TOOLTIP), SetPadding(0, 2, 1, 2),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_TF_MANY_RANDOM_TOWNS), SetMinimalSize(156, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_MANY_RANDOM_TOWNS, STR_FOUND_TOWN_RANDOM_TOWNS_TOOLTIP), SetPadding(0, 2, 0, 2),
-			/* Town name selection. */
-			NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(156, 14), SetPadding(0, 2, 0, 2), SetDataTip(STR_FOUND_TOWN_NAME_TITLE, STR_NULL),
-			NWidget(WWT_EDITBOX, COLOUR_GREY, WID_TF_TOWN_NAME_EDITBOX), SetMinimalSize(156, 12), SetPadding(0, 2, 3, 2),
-											SetDataTip(STR_FOUND_TOWN_NAME_EDITOR_TITLE, STR_FOUND_TOWN_NAME_EDITOR_HELP),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_TF_TOWN_NAME_RANDOM), SetMinimalSize(78, 12), SetPadding(0, 2, 0, 2), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_NAME_RANDOM_BUTTON, STR_FOUND_TOWN_NAME_RANDOM_TOOLTIP),
-			/* Town size selection. */
-			NWidget(NWID_HORIZONTAL), SetPIP(2, 0, 2),
-				NWidget(NWID_SPACER), SetFill(1, 0),
-				NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(148, 14), SetDataTip(STR_FOUND_TOWN_INITIAL_SIZE_TITLE, STR_NULL),
-				NWidget(NWID_SPACER), SetFill(1, 0),
-			EndContainer(),
-			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_SIZE_SMALL), SetMinimalSize(78, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_INITIAL_SIZE_SMALL_BUTTON, STR_FOUND_TOWN_INITIAL_SIZE_TOOLTIP),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_SIZE_MEDIUM), SetMinimalSize(78, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_INITIAL_SIZE_MEDIUM_BUTTON, STR_FOUND_TOWN_INITIAL_SIZE_TOOLTIP),
-			EndContainer(),
-			NWidget(NWID_SPACER), SetMinimalSize(0, 1),
-			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_SIZE_LARGE), SetMinimalSize(78, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_INITIAL_SIZE_LARGE_BUTTON, STR_FOUND_TOWN_INITIAL_SIZE_TOOLTIP),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_SIZE_RANDOM), SetMinimalSize(78, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_SIZE_RANDOM, STR_FOUND_TOWN_INITIAL_SIZE_TOOLTIP),
-			EndContainer(),
-			NWidget(NWID_SPACER), SetMinimalSize(0, 3),
-			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_CITY), SetPadding(0, 2, 0, 2), SetMinimalSize(156, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_CITY, STR_FOUND_TOWN_CITY_TOOLTIP), SetFill(1, 0),
+	NWidget(WWT_PANEL, COLOUR_DARK_GREEN),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 2),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_NEW_TOWN), SetMinimalSize(156, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_NEW_TOWN_BUTTON, STR_FOUND_TOWN_NEW_TOWN_TOOLTIP), SetPadding(0, 2, 1, 2),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_TF_RANDOM_TOWN), SetMinimalSize(156, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_RANDOM_TOWN_BUTTON, STR_FOUND_TOWN_RANDOM_TOWN_TOOLTIP), SetPadding(0, 2, 1, 2),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_TF_MANY_RANDOM_TOWNS), SetMinimalSize(156, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_MANY_RANDOM_TOWNS, STR_FOUND_TOWN_RANDOM_TOWNS_TOOLTIP), SetPadding(0, 2, 0, 2),
+		/* Town name selection. */
+		NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(156, 14), SetPadding(0, 2, 0, 2), SetDataTip(STR_FOUND_TOWN_NAME_TITLE, STR_NULL),
+		NWidget(WWT_EDITBOX, COLOUR_GREY, WID_TF_TOWN_NAME_EDITBOX), SetMinimalSize(156, 12), SetPadding(0, 2, 3, 2),
+										SetDataTip(STR_FOUND_TOWN_NAME_EDITOR_TITLE, STR_FOUND_TOWN_NAME_EDITOR_HELP),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_TF_TOWN_NAME_RANDOM), SetMinimalSize(78, 12), SetPadding(0, 2, 0, 2), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_NAME_RANDOM_BUTTON, STR_FOUND_TOWN_NAME_RANDOM_TOOLTIP),
+		/* Town size selection. */
+		NWidget(NWID_HORIZONTAL), SetPIP(2, 0, 2),
+			NWidget(NWID_SPACER), SetFill(1, 0),
+			NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(148, 14), SetDataTip(STR_FOUND_TOWN_INITIAL_SIZE_TITLE, STR_NULL),
+			NWidget(NWID_SPACER), SetFill(1, 0),
 		EndContainer(),
-		NWidget(WWT_PANEL, COLOUR_DARK_GREEN),
-			/* Town roads selection. */
-			NWidget(NWID_HORIZONTAL), SetPIP(2, 0, 2),
-				NWidget(NWID_SPACER), SetFill(1, 0),
-				NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(148, 14), SetDataTip(STR_FOUND_TOWN_ROAD_LAYOUT, STR_NULL),
-				NWidget(NWID_SPACER), SetFill(1, 0),
-			EndContainer(),
-			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_ORIGINAL), SetMinimalSize(78, 12), SetFill(1, 0), SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_ORIGINAL, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_BETTER), SetMinimalSize(78, 12), SetFill(1, 0), SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_BETTER_ROADS, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT),
-			EndContainer(),
-			NWidget(NWID_SPACER), SetMinimalSize(0, 1),
-			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_GRID2), SetMinimalSize(78, 12), SetFill(1, 0), SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_2X2_GRID, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_GRID3), SetMinimalSize(78, 12), SetFill(1, 0), SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_3X3_GRID, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT),
-			EndContainer(),
-			NWidget(NWID_SPACER), SetMinimalSize(0, 1),
-			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_RANDOM), SetPadding(0, 2, 0, 2), SetMinimalSize(0, 12), SetFill(1, 0),
-											SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_RANDOM, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT), SetFill(1, 0),
-			NWidget(NWID_SPACER), SetMinimalSize(0, 2),
+		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_SIZE_SMALL), SetMinimalSize(78, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_INITIAL_SIZE_SMALL_BUTTON, STR_FOUND_TOWN_INITIAL_SIZE_TOOLTIP),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_SIZE_MEDIUM), SetMinimalSize(78, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_INITIAL_SIZE_MEDIUM_BUTTON, STR_FOUND_TOWN_INITIAL_SIZE_TOOLTIP),
 		EndContainer(),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 1),
+		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_SIZE_LARGE), SetMinimalSize(78, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_INITIAL_SIZE_LARGE_BUTTON, STR_FOUND_TOWN_INITIAL_SIZE_TOOLTIP),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_SIZE_RANDOM), SetMinimalSize(78, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_SIZE_RANDOM, STR_FOUND_TOWN_INITIAL_SIZE_TOOLTIP),
+		EndContainer(),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 3),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_CITY), SetPadding(0, 2, 0, 2), SetMinimalSize(156, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_CITY, STR_FOUND_TOWN_CITY_TOOLTIP), SetFill(1, 0),
+		/* Town roads selection. */
+		NWidget(NWID_HORIZONTAL), SetPIP(2, 0, 2),
+			NWidget(NWID_SPACER), SetFill(1, 0),
+			NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(148, 14), SetDataTip(STR_FOUND_TOWN_ROAD_LAYOUT, STR_NULL),
+			NWidget(NWID_SPACER), SetFill(1, 0),
+		EndContainer(),
+		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_ORIGINAL), SetMinimalSize(78, 12), SetFill(1, 0), SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_ORIGINAL, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_BETTER), SetMinimalSize(78, 12), SetFill(1, 0), SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_BETTER_ROADS, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT),
+		EndContainer(),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 1),
+		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_GRID2), SetMinimalSize(78, 12), SetFill(1, 0), SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_2X2_GRID, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_GRID3), SetMinimalSize(78, 12), SetFill(1, 0), SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_3X3_GRID, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT),
+		EndContainer(),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 1),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_TF_LAYOUT_RANDOM), SetPadding(0, 2, 0, 2), SetMinimalSize(0, 12), SetFill(1, 0),
+										SetDataTip(STR_FOUND_TOWN_SELECT_LAYOUT_RANDOM, STR_FOUND_TOWN_SELECT_TOWN_ROAD_LAYOUT), SetFill(1, 0),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 2),
 	EndContainer(),
 };
 
@@ -1120,10 +1111,6 @@ public:
 		this->querystrings[WID_TF_TOWN_NAME_EDITBOX] = &this->townname_editbox;
 		this->RandomTownName();
 		this->UpdateButtons(true);
-	}
-
-	~FoundTownWindow() {
-		if (_thd.GetCallbackWnd() == this) this->OnPlaceObjectAbort();
 	}
 
 	void RandomTownName()
@@ -1163,7 +1150,8 @@ public:
 		this->SetDirty();
 	}
 
-	void ExecuteFoundTownCommand(TileIndex tile, bool random, StringID errstr, CommandCallback cc)
+	template <typename Tcallback>
+	void ExecuteFoundTownCommand(TileIndex tile, bool random, StringID errstr, Tcallback cc)
 	{
 		std::string name;
 
@@ -1176,8 +1164,8 @@ public:
 			if (strcmp(buf, this->townname_editbox.text.buf) != 0) name = this->townname_editbox.text.buf;
 		}
 
-		bool success = DoCommandP(tile, this->town_size | this->city << 2 | this->town_layout << 3 | random << 6,
-				townnameparts, CMD_FOUND_TOWN | CMD_MSG(errstr), cc, name);
+		bool success = Command<CMD_FOUND_TOWN>::Post(errstr, cc,
+				tile, this->town_size, this->city, this->town_layout, random, townnameparts, name);
 
 		/* Rerandomise name, if success and no cost-estimation. */
 		if (success && !_shift_pressed) this->RandomTownName();
@@ -1231,25 +1219,11 @@ public:
 
 	void OnPlaceObject(Point pt, TileIndex tile) override
 	{
-		VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_SINGLE_TILE);
-		MoveAllWindowsOffScreen();
-	}
-
-	void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt) override
-	{
-		VpSelectTilesWithMethod(pt.x, pt.y, select_method);
-	}
-
-	void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile) override
-	{
-		assert(start_tile == end_tile);
-		this->ExecuteFoundTownCommand(end_tile, false, STR_ERROR_CAN_T_FOUND_TOWN_HERE, CcFoundTown);
-		MoveAllHiddenWindowsBackToScreen();
+		this->ExecuteFoundTownCommand(tile, false, STR_ERROR_CAN_T_FOUND_TOWN_HERE, CcFoundTown);
 	}
 
 	void OnPlaceObjectAbort() override
 	{
-		MoveAllHiddenWindowsBackToScreen();
 		this->RaiseButtons();
 		this->UpdateButtons(false);
 	}
@@ -1267,7 +1241,7 @@ public:
 };
 
 static WindowDesc _found_town_desc(
-	WDP_ALIGN_TOOLBAR, "build_town", 160, 162,
+	WDP_AUTO, "build_town", 160, 162,
 	WC_FOUND_TOWN, WC_NONE,
 	WDF_CONSTRUCTION,
 	_nested_found_town_widgets, lengthof(_nested_found_town_widgets)
@@ -1276,7 +1250,6 @@ static WindowDesc _found_town_desc(
 void ShowFoundTownWindow()
 {
 	if (_game_mode != GM_EDITOR && !Company::IsValidID(_local_company)) return;
-	CloseToolbarLinkedWindows();
 	AllocateWindowDescFront<FoundTownWindow>(&_found_town_desc, 0);
 }
 

@@ -36,10 +36,13 @@
 #include "sortlist_type.h"
 #include "stringfilter_type.h"
 #include "string_func.h"
+#include "station_cmd.h"
+#include "tunnelbridge_cmd.h"
+#include "waypoint_cmd.h"
+#include "rail_cmd.h"
 
 #include "station_map.h"
 #include "tunnelbridge_map.h"
-#include "build_confirmation_func.h"
 
 #include "widgets/rail_widget.h"
 
@@ -86,18 +89,20 @@ static bool IsStationAvailable(const StationSpec *statspec)
 	return Convert8bitBooleanCallback(statspec->grf_prop.grffile, CBID_STATION_AVAILABILITY, cb_res);
 }
 
-void CcPlaySound_CONSTRUCTION_RAIL(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcPlaySound_CONSTRUCTION_RAIL(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Succeeded() && _settings_client.sound.confirm) SndPlayTileFx(SND_20_CONSTRUCTION_RAIL, tile);
 }
 
-static void GenericPlaceRail(TileIndex tile, int cmd)
+static void GenericPlaceRail(TileIndex tile, Track track)
 {
-	DoCommandP(tile, _cur_railtype, cmd | (_settings_client.gui.auto_remove_signals << 3),
-			_remove_button_clicked ?
-			CMD_REMOVE_SINGLE_RAIL | CMD_MSG(STR_ERROR_CAN_T_REMOVE_RAILROAD_TRACK) :
-			CMD_BUILD_SINGLE_RAIL | CMD_MSG(STR_ERROR_CAN_T_BUILD_RAILROAD_TRACK),
-			CcPlaySound_CONSTRUCTION_RAIL);
+	if (_remove_button_clicked) {
+		Command<CMD_REMOVE_SINGLE_RAIL>::Post(STR_ERROR_CAN_T_REMOVE_RAILROAD_TRACK, CcPlaySound_CONSTRUCTION_RAIL,
+				tile, track);
+	} else {
+		Command<CMD_BUILD_SINGLE_RAIL>::Post(STR_ERROR_CAN_T_BUILD_RAILROAD_TRACK, CcPlaySound_CONSTRUCTION_RAIL,
+				tile, _cur_railtype, track, _settings_client.gui.auto_remove_signals);
+	}
 }
 
 /**
@@ -113,7 +118,7 @@ static void PlaceExtraDepotRail(TileIndex tile, DiagDirection dir, Track track)
 	if (GetRailTileType(tile) == RAIL_TILE_SIGNALS && !_settings_client.gui.auto_remove_signals) return;
 	if ((GetTrackBits(tile) & DiagdirReachesTracks(dir)) == 0) return;
 
-	DoCommandP(tile, _cur_railtype, track | (_settings_client.gui.auto_remove_signals << 3), CMD_BUILD_SINGLE_RAIL);
+	Command<CMD_BUILD_SINGLE_RAIL>::Post(tile, _cur_railtype, track, _settings_client.gui.auto_remove_signals);
 }
 
 /** Additional pieces of track to add at the entrance of a depot. */
@@ -130,11 +135,9 @@ static const DiagDirection _place_depot_extra_dir[12] = {
 	DIAGDIR_NW, DIAGDIR_NE, DIAGDIR_NW, DIAGDIR_NE,
 };
 
-void CcRailDepot(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcRailDepot(Commands cmd, const CommandCost &result, TileIndex tile, RailType rt, DiagDirection dir)
 {
 	if (result.Failed()) return;
-
-	DiagDirection dir = (DiagDirection)p2;
 
 	if (_settings_client.sound.confirm) SndPlayTileFx(SND_20_CONSTRUCTION_RAIL, tile);
 	if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
@@ -167,11 +170,11 @@ static void PlaceRail_Waypoint(TileIndex tile)
 	} else {
 		/* Tile where we can't build rail waypoints. This is always going to fail,
 		 * but provides the user with a proper error message. */
-		DoCommandP(tile, 1 << 8 | 1 << 16, STAT_CLASS_WAYP | INVALID_STATION << 16, CMD_BUILD_RAIL_WAYPOINT | CMD_MSG(STR_ERROR_CAN_T_BUILD_TRAIN_WAYPOINT));
+		Command<CMD_BUILD_RAIL_WAYPOINT>::Post(STR_ERROR_CAN_T_BUILD_TRAIN_WAYPOINT, tile, AXIS_X, 1, 1, STAT_CLASS_WAYP, 0, INVALID_STATION, false);
 	}
 }
 
-void CcStation(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcStation(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Failed()) return;
 
@@ -193,7 +196,25 @@ static void PlaceRail_Station(TileIndex tile)
 		VpStartPlaceSizing(tile, VPM_X_AND_Y_LIMITED, DDSP_BUILD_STATION);
 		VpSetPlaceSizingLimit(_settings_game.station.station_spread);
 	} else {
-		VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_BUILD_STATION);
+		int w = _settings_client.gui.station_numtracks;
+		int h = _settings_client.gui.station_platlength;
+		if (!_railstation.orientation) Swap(w, h);
+
+		RailStationGUISettings params = _railstation;
+		RailType rt = _cur_railtype;
+		byte numtracks = _settings_client.gui.station_numtracks;
+		byte platlength = _settings_client.gui.station_platlength;
+		bool adjacent = _ctrl_pressed;
+
+		auto proc = [=](bool test, StationID to_join) -> bool {
+			if (test) {
+				return Command<CMD_BUILD_RAIL_STATION>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_RAIL_STATION>()), tile, rt, params.orientation, numtracks, platlength, params.station_class, params.station_type, INVALID_STATION, adjacent).Succeeded();
+			} else {
+				return Command<CMD_BUILD_RAIL_STATION>::Post(STR_ERROR_CAN_T_BUILD_RAILROAD_STATION, CcStation, tile, rt, params.orientation, numtracks, platlength, params.station_class, params.station_type, to_join, adjacent);
+			}
+		};
+
+		ShowSelectStationIfNeeded(TileArea(tile, w, h), proc);
 	}
 }
 
@@ -217,45 +238,42 @@ static void GenericPlaceSignals(TileIndex tile)
 	Track track = FindFirstTrack(trackbits);
 
 	if (_remove_button_clicked) {
-		DoCommandP(tile, track, 0, CMD_REMOVE_SIGNALS | CMD_MSG(STR_ERROR_CAN_T_REMOVE_SIGNALS_FROM), CcPlaySound_CONSTRUCTION_RAIL);
+		Command<CMD_REMOVE_SIGNALS>::Post(STR_ERROR_CAN_T_REMOVE_SIGNALS_FROM, CcPlaySound_CONSTRUCTION_RAIL, tile, track);
 	} else {
-		const Window *w = FindWindowById(WC_BUILD_SIGNAL, 0);
-
-		/* various bitstuffed elements for CmdBuildSingleSignal() */
-		uint32 p1 = track;
-
 		/* Which signals should we cycle through? */
-		uint8 cycle_types;
+		SignalType cycle_start = _settings_client.gui.cycle_signal_types == SIGNAL_CYCLE_ALL && _settings_client.gui.signal_gui_mode == SIGNAL_GUI_ALL ? SIGTYPE_NORMAL : SIGTYPE_PBS;
 
-		if (_settings_client.gui.cycle_signal_types == SIGNAL_CYCLE_ALL && _settings_client.gui.signal_gui_mode == SIGNAL_GUI_ALL) {
-			cycle_types = SIGTYPE_NORMAL | (SIGTYPE_LAST << 3);
-		} else {
-			cycle_types = SIGTYPE_PBS | (SIGTYPE_LAST << 3);
-		}
-
-		if (w != nullptr) {
+		if (FindWindowById(WC_BUILD_SIGNAL, 0) != nullptr) {
 			/* signal GUI is used */
-			SB(p1, 3, 1, _ctrl_pressed);
-			SB(p1, 4, 1, _cur_signal_variant);
-			SB(p1, 5, 3, _cur_signal_type);
-			SB(p1, 8, 1, _convert_signal_button);
-			SB(p1, 9, 6, cycle_types);
+			Command<CMD_BUILD_SIGNALS>::Post(_convert_signal_button ? STR_ERROR_SIGNAL_CAN_T_CONVERT_SIGNALS_HERE : STR_ERROR_CAN_T_BUILD_SIGNALS_HERE, CcPlaySound_CONSTRUCTION_RAIL,
+				tile, track, _cur_signal_type, _cur_signal_variant, _convert_signal_button, false, _ctrl_pressed, cycle_start, SIGTYPE_LAST, 0, 0);
 		} else {
-			SB(p1, 3, 1, _ctrl_pressed);
-			SB(p1, 4, 1, (_cur_year < _settings_client.gui.semaphore_build_before ? SIG_SEMAPHORE : SIG_ELECTRIC));
-			SB(p1, 5, 3, SIGTYPE_PBS_ONEWAY);
-			SB(p1, 8, 1, 0);
-			SB(p1, 9, 6, cycle_types);
-		}
+			SignalVariant sigvar = _cur_year < _settings_client.gui.semaphore_build_before ? SIG_SEMAPHORE : SIG_ELECTRIC;
+			Command<CMD_BUILD_SIGNALS>::Post(STR_ERROR_CAN_T_BUILD_SIGNALS_HERE, CcPlaySound_CONSTRUCTION_RAIL,
+				tile, track, _settings_client.gui.default_signal_type, sigvar, false, false, _ctrl_pressed, cycle_start, SIGTYPE_LAST, 0, 0);
 
-		DoCommandP(tile, p1, 0, CMD_BUILD_SIGNALS |
-				CMD_MSG((w != nullptr && _convert_signal_button) ? STR_ERROR_SIGNAL_CAN_T_CONVERT_SIGNALS_HERE : STR_ERROR_CAN_T_BUILD_SIGNALS_HERE),
-				CcPlaySound_CONSTRUCTION_RAIL);
+		}
+	}
+}
+
+/**
+ * Start placing a rail bridge.
+ * @param tile Position of the first tile of the bridge.
+ * @param w    Rail toolbar window.
+ */
+static void PlaceRail_Bridge(TileIndex tile, Window *w)
+{
+	if (IsBridgeTile(tile)) {
+		TileIndex other_tile = GetOtherTunnelBridgeEnd(tile);
+		Point pt = {0, 0};
+		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_BRIDGE, pt, other_tile, tile);
+	} else {
+		VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_BRIDGE);
 	}
 }
 
 /** Command callback for building a tunnel */
-void CcBuildRailTunnel(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcBuildRailTunnel(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Succeeded()) {
 		if (_settings_client.sound.confirm) SndPlayTileFx(SND_20_CONSTRUCTION_RAIL, tile);
@@ -288,15 +306,12 @@ static bool RailToolbar_CtrlChanged(Window *w)
 	if (w->IsWidgetDisabled(WID_RAT_REMOVE)) return false;
 
 	/* allow ctrl to switch remove mode only for these widgets */
-	// This breaks joining rail stations functionality on Android
-	/*
 	for (uint i = WID_RAT_BUILD_NS; i <= WID_RAT_BUILD_STATION; i++) {
 		if ((i <= WID_RAT_AUTORAIL || i >= WID_RAT_BUILD_WAYPOINT) && w->IsWidgetLowered(i)) {
 			ToggleRailButton_Remove(w);
 			return true;
 		}
 	}
-	*/
 
 	return false;
 }
@@ -336,19 +351,20 @@ static void BuildRailClick_Remove(Window *w)
 	}
 }
 
-static void DoRailroadTrack(int mode)
+static void DoRailroadTrack(Track track)
 {
-	uint32 p2 = _cur_railtype | (mode << 6) | (_settings_client.gui.auto_remove_signals << 11);
-	DoCommandP(TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(_thd.selend.x, _thd.selend.y), p2,
-			_remove_button_clicked ?
-			CMD_REMOVE_RAILROAD_TRACK | CMD_MSG(STR_ERROR_CAN_T_REMOVE_RAILROAD_TRACK) :
-			CMD_BUILD_RAILROAD_TRACK  | CMD_MSG(STR_ERROR_CAN_T_BUILD_RAILROAD_TRACK),
-			CcPlaySound_CONSTRUCTION_RAIL);
+	if (_remove_button_clicked) {
+		Command<CMD_REMOVE_RAILROAD_TRACK>::Post(STR_ERROR_CAN_T_REMOVE_RAILROAD_TRACK, CcPlaySound_CONSTRUCTION_RAIL,
+				TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(_thd.selend.x, _thd.selend.y), track);
+	} else {
+		Command<CMD_BUILD_RAILROAD_TRACK>::Post(STR_ERROR_CAN_T_BUILD_RAILROAD_TRACK, CcPlaySound_CONSTRUCTION_RAIL,
+				TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(_thd.selend.x, _thd.selend.y), _cur_railtype, track, _settings_client.gui.auto_remove_signals, false);
+	}
 }
 
 static void HandleAutodirPlacement()
 {
-	int trackstat = _thd.drawstyle & HT_DIR_MASK; // 0..5
+	Track trackstat = static_cast<Track>( _thd.drawstyle & HT_DIR_MASK); // 0..5
 
 	if (_thd.drawstyle & HT_RAIL) { // one tile case
 		GenericPlaceRail(TileVirtXY(_thd.selend.x, _thd.selend.y), trackstat);
@@ -366,39 +382,25 @@ static void HandleAutodirPlacement()
  */
 static void HandleAutoSignalPlacement()
 {
-	uint32 p2 = GB(_thd.drawstyle, 0, 3); // 0..5
+	Track track = (Track)GB(_thd.drawstyle, 0, 3); // 0..5
 
 	if ((_thd.drawstyle & HT_DRAG_MASK) == HT_RECT) { // one tile case
 		GenericPlaceSignals(TileVirtXY(_thd.selend.x, _thd.selend.y));
 		return;
 	}
 
-	const Window *w = FindWindowById(WC_BUILD_SIGNAL, 0);
-
-	if (w != nullptr) {
-		/* signal GUI is used */
-		SB(p2,  3, 1, 0);
-		SB(p2,  4, 1, _cur_signal_variant);
-		SB(p2,  6, 1, _ctrl_pressed);
-		SB(p2,  7, 3, _cur_signal_type);
-		SB(p2, 24, 8, _settings_client.gui.drag_signals_density);
-		SB(p2, 10, 1, !_settings_client.gui.drag_signals_fixed_distance);
-	} else {
-		SB(p2,  3, 1, 0);
-		SB(p2,  4, 1, (_cur_year < _settings_client.gui.semaphore_build_before ? SIG_SEMAPHORE : SIG_ELECTRIC));
-		SB(p2,  6, 1, _ctrl_pressed);
-		SB(p2,  7, 3, SIGTYPE_PBS_ONEWAY);
-		SB(p2, 24, 8, _settings_client.gui.drag_signals_density);
-		SB(p2, 10, 1, !_settings_client.gui.drag_signals_fixed_distance);
-	}
-
 	/* _settings_client.gui.drag_signals_density is given as a parameter such that each user
 	 * in a network game can specify their own signal density */
-	DoCommandP(TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(_thd.selend.x, _thd.selend.y), p2,
-			_remove_button_clicked ?
-			CMD_REMOVE_SIGNAL_TRACK | CMD_MSG(STR_ERROR_CAN_T_REMOVE_SIGNALS_FROM) :
-			CMD_BUILD_SIGNAL_TRACK  | CMD_MSG(STR_ERROR_CAN_T_BUILD_SIGNALS_HERE),
-			CcPlaySound_CONSTRUCTION_RAIL);
+	if (_remove_button_clicked) {
+		Command<CMD_REMOVE_SIGNAL_TRACK>::Post(STR_ERROR_CAN_T_REMOVE_SIGNALS_FROM, CcPlaySound_CONSTRUCTION_RAIL,
+				TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(_thd.selend.x, _thd.selend.y), track, _ctrl_pressed);
+	} else {
+		bool sig_gui = FindWindowById(WC_BUILD_SIGNAL, 0) != nullptr;
+		SignalType sigtype = sig_gui ? _cur_signal_type : _settings_client.gui.default_signal_type;
+		SignalVariant sigvar = sig_gui ? _cur_signal_variant : (_cur_year < _settings_client.gui.semaphore_build_before ? SIG_SEMAPHORE : SIG_ELECTRIC);
+		Command<CMD_BUILD_SIGNAL_TRACK>::Post(STR_ERROR_CAN_T_BUILD_SIGNALS_HERE, CcPlaySound_CONSTRUCTION_RAIL,
+				TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(_thd.selend.x, _thd.selend.y), track, sigtype, sigvar, false, _ctrl_pressed, !_settings_client.gui.drag_signals_fixed_distance, _settings_client.gui.drag_signals_density);
+	}
 }
 
 
@@ -406,7 +408,6 @@ static void HandleAutoSignalPlacement()
 struct BuildRailToolbarWindow : Window {
 	RailType railtype;    ///< Rail type to build.
 	int last_user_action; ///< Last started user action.
-	bool last_user_action_remove; ///< Use bulldozer button with last action
 
 	BuildRailToolbarWindow(WindowDesc *desc, RailType railtype) : Window(desc)
 	{
@@ -414,14 +415,12 @@ struct BuildRailToolbarWindow : Window {
 		this->SetupRailToolbar(railtype);
 		this->DisableWidget(WID_RAT_REMOVE);
 		this->last_user_action = WIDGET_LIST_END;
-		this->last_user_action_remove = false;
 
-		if (_settings_client.gui.link_terraform_toolbar || _settings_client.gui.compact_vertical_toolbar) ShowTerraformToolbar();
+		if (_settings_client.gui.link_terraform_toolbar) ShowTerraformToolbar(this);
 	}
 
 	void Close() override
 	{
-		if (_thd.GetCallbackWnd() == this) this->OnPlaceObjectAbort();
 		if (this->IsWidgetLowered(WID_RAT_BUILD_STATION)) SetViewportCatchmentStation(nullptr, true);
 		if (_settings_client.gui.link_terraform_toolbar) CloseWindowById(WC_SCEN_LAND_GEN, 0, false);
 		this->Window::Close();
@@ -538,7 +537,7 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_BUILD_DEPOT:
-				if (HandlePlacePushButton(this, WID_RAT_BUILD_DEPOT, GetRailTypeInfo(_cur_railtype)->cursor.depot, HT_RECT | HT_SCROLL_VIEWPORT)) {
+				if (HandlePlacePushButton(this, WID_RAT_BUILD_DEPOT, GetRailTypeInfo(_cur_railtype)->cursor.depot, HT_RECT)) {
 					ShowBuildTrainDepotPicker(this);
 					this->last_user_action = widget;
 				}
@@ -547,7 +546,7 @@ struct BuildRailToolbarWindow : Window {
 			case WID_RAT_BUILD_WAYPOINT:
 				this->last_user_action = widget;
 				_waypoint_count = StationClass::Get(STAT_CLASS_WAYP)->GetSpecCount();
-				if (HandlePlacePushButton(this, WID_RAT_BUILD_WAYPOINT, SPR_CURSOR_WAYPOINT, HT_RECT | HT_SCROLL_VIEWPORT) && _waypoint_count > 1) {
+				if (HandlePlacePushButton(this, WID_RAT_BUILD_WAYPOINT, SPR_CURSOR_WAYPOINT, HT_RECT) && _waypoint_count > 1) {
 					ShowBuildWaypointPicker(this);
 				}
 				break;
@@ -627,7 +626,7 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_BUILD_DEPOT:
-				VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_SINGLE_TILE);
+				Command<CMD_BUILD_TRAIN_DEPOT>::Post(STR_ERROR_CAN_T_BUILD_TRAIN_DEPOT, CcRailDepot, tile, _cur_railtype, _build_depot_direction);
 				break;
 
 			case WID_RAT_BUILD_WAYPOINT:
@@ -643,11 +642,11 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_BUILD_BRIDGE:
-				VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_BRIDGE);
+				PlaceRail_Bridge(tile, this);
 				break;
 
 			case WID_RAT_BUILD_TUNNEL:
-				VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_BUILD_BRIDGE);
+				Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRailTunnel, tile, TRANSPORT_RAIL, _cur_railtype);
 				break;
 
 			case WID_RAT_CONVERT_RAIL:
@@ -656,7 +655,6 @@ struct BuildRailToolbarWindow : Window {
 
 			default: NOT_REACHED();
 		}
-		MoveAllWindowsOffScreen();
 	}
 
 	void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt) override
@@ -664,38 +662,17 @@ struct BuildRailToolbarWindow : Window {
 		/* no dragging if you have pressed the convert button */
 		if (FindWindowById(WC_BUILD_SIGNAL, 0) != nullptr && _convert_signal_button && this->IsWidgetLowered(WID_RAT_BUILD_SIGNALS)) return;
 
-		switch (this->last_user_action) {
-			case WID_RAT_BUILD_TUNNEL:
-				this->OnPlacePresize(pt, TileVirtXY(pt.x, pt.y));
-				return;
-			default:
-				break;
-		}
-
 		VpSelectTilesWithMethod(pt.x, pt.y, select_method);
 	}
 
 	void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile) override
 	{
 		if (pt.x != -1) {
-			this->last_user_action_remove = _remove_button_clicked;
 			switch (select_proc) {
 				default: NOT_REACHED();
-				case DDSP_PLACE_AUTOROAD:
-					assert(this->last_user_action == WID_RAT_BUILD_BRIDGE);
 				case DDSP_BUILD_BRIDGE:
-					switch (this->last_user_action) {
-						case WID_RAT_BUILD_TUNNEL:
-							if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
-							else VpStartPreSizing();
-							DoCommandP(end_tile, _cur_railtype | (TRANSPORT_RAIL << 8), 0, CMD_BUILD_TUNNEL | CMD_MSG(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE), CcBuildRailTunnel);
-							break;
-						case WID_RAT_BUILD_BRIDGE:
-							if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
-							ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
-							break;
-						default: NOT_REACHED();
-					}
+					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
 					break;
 
 				case DDSP_PLACE_RAIL:
@@ -711,7 +688,7 @@ struct BuildRailToolbarWindow : Window {
 					break;
 
 				case DDSP_CONVERT_RAIL:
-					DoCommandP(end_tile, start_tile, _cur_railtype | (_ctrl_pressed ? 1 << 6 : 0), CMD_CONVERT_RAIL | CMD_MSG(STR_ERROR_CAN_T_CONVERT_RAIL), CcPlaySound_CONSTRUCTION_RAIL);
+					Command<CMD_CONVERT_RAIL>::Post(STR_ERROR_CAN_T_CONVERT_RAIL, CcPlaySound_CONSTRUCTION_RAIL, end_tile, start_tile, _cur_railtype, _ctrl_pressed);
 					break;
 
 				case DDSP_REMOVE_STATION:
@@ -719,46 +696,33 @@ struct BuildRailToolbarWindow : Window {
 					if (this->IsWidgetLowered(WID_RAT_BUILD_STATION)) {
 						/* Station */
 						if (_remove_button_clicked) {
-							DoCommandP(end_tile, start_tile, _ctrl_pressed ? 0 : 1, CMD_REMOVE_FROM_RAIL_STATION | CMD_MSG(STR_ERROR_CAN_T_REMOVE_PART_OF_STATION), CcPlaySound_CONSTRUCTION_RAIL);
+							Command<CMD_REMOVE_FROM_RAIL_STATION>::Post(STR_ERROR_CAN_T_REMOVE_PART_OF_STATION, CcPlaySound_CONSTRUCTION_RAIL, end_tile, start_tile, _ctrl_pressed);
 						} else {
-							if (!_settings_client.gui.station_dragdrop) {
-								uint32 p1 = _cur_railtype | _railstation.orientation << 6 | _settings_client.gui.station_numtracks << 8 | _settings_client.gui.station_platlength << 16 | _ctrl_pressed << 24;
-								uint32 p2 = _railstation.station_class | _railstation.station_type << 8 | INVALID_STATION << 16;
-
-								int w = _settings_client.gui.station_numtracks;
-								int h = _settings_client.gui.station_platlength;
-								if (!_railstation.orientation) Swap(w, h);
-
-								CommandContainer cmdcont = { end_tile, p1, p2, CMD_BUILD_RAIL_STATION | CMD_MSG(STR_ERROR_CAN_T_BUILD_RAILROAD_STATION), CcStation, "" };
-								ShowSelectStationIfNeeded(cmdcont, TileArea(end_tile, w, h));
-							} else {
-								HandleStationPlacement(start_tile, end_tile);
-							}
+							HandleStationPlacement(start_tile, end_tile);
 						}
 					} else {
 						/* Waypoint */
 						if (_remove_button_clicked) {
-							DoCommandP(end_tile, start_tile, _ctrl_pressed ? 0 : 1, CMD_REMOVE_FROM_RAIL_WAYPOINT | CMD_MSG(STR_ERROR_CAN_T_REMOVE_TRAIN_WAYPOINT), CcPlaySound_CONSTRUCTION_RAIL);
+							Command<CMD_REMOVE_FROM_RAIL_WAYPOINT>::Post(STR_ERROR_CAN_T_REMOVE_TRAIN_WAYPOINT, CcPlaySound_CONSTRUCTION_RAIL, end_tile, start_tile, _ctrl_pressed);
 						} else {
 							TileArea ta(start_tile, end_tile);
-							uint32 p1 = _cur_railtype | (select_method == VPM_X_LIMITED ? AXIS_X : AXIS_Y) << 6 | ta.w << 8 | ta.h << 16 | _ctrl_pressed << 24;
-							uint32 p2 = STAT_CLASS_WAYP | _cur_waypoint_type << 8 | INVALID_STATION << 16;
+							Axis axis = select_method == VPM_X_LIMITED ? AXIS_X : AXIS_Y;
+							bool adjacent = _ctrl_pressed;
+							byte waypoint_type = _cur_waypoint_type;
 
-							CommandContainer cmdcont = { ta.tile, p1, p2, CMD_BUILD_RAIL_WAYPOINT | CMD_MSG(STR_ERROR_CAN_T_BUILD_TRAIN_WAYPOINT), CcPlaySound_CONSTRUCTION_RAIL, "" };
-							ShowSelectWaypointIfNeeded(cmdcont, ta);
+							auto proc = [=](bool test, StationID to_join) -> bool {
+								if (test) {
+									return Command<CMD_BUILD_RAIL_WAYPOINT>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_RAIL_WAYPOINT>()), ta.tile, axis, ta.w, ta.h, STAT_CLASS_WAYP, waypoint_type, INVALID_STATION, adjacent).Succeeded();
+								} else {
+									return Command<CMD_BUILD_RAIL_WAYPOINT>::Post(STR_ERROR_CAN_T_BUILD_TRAIN_WAYPOINT, CcPlaySound_CONSTRUCTION_RAIL, ta.tile, axis, ta.w, ta.h, STAT_CLASS_WAYP, waypoint_type, to_join, adjacent);
+								}
+							};
+
+							ShowSelectWaypointIfNeeded(ta, proc);
 						}
 					}
 					break;
-
-				case DDSP_SINGLE_TILE:
-					assert(end_tile == start_tile);
-					assert(last_user_action == WID_RAT_BUILD_DEPOT);
-					DoCommandP(end_tile, _cur_railtype, _build_depot_direction,
-							CMD_BUILD_TRAIN_DEPOT | CMD_MSG(STR_ERROR_CAN_T_BUILD_TRAIN_DEPOT),
-							CcRailDepot);
-					break;
 			}
-			MoveAllHiddenWindowsBackToScreen();
 		}
 	}
 
@@ -766,12 +730,10 @@ struct BuildRailToolbarWindow : Window {
 	{
 		if (this->IsWidgetLowered(WID_RAT_BUILD_STATION)) SetViewportCatchmentStation(nullptr, true);
 
-		MoveAllHiddenWindowsBackToScreen();
 		this->RaiseButtons();
 		this->DisableWidget(WID_RAT_REMOVE);
 		this->SetWidgetDirty(WID_RAT_REMOVE);
 
-		if (ConfirmationWindowShown() && (this->last_user_action == WID_RAT_BUILD_BRIDGE || _ctrl_pressed)) return;
 		CloseWindowById(WC_BUILD_SIGNAL, TRANSPORT_RAIL);
 		CloseWindowById(WC_BUILD_STATION, TRANSPORT_RAIL);
 		CloseWindowById(WC_BUILD_DEPOT, TRANSPORT_RAIL);
@@ -780,30 +742,10 @@ struct BuildRailToolbarWindow : Window {
 		CloseWindowByClass(WC_BUILD_BRIDGE);
 	}
 
-	void SelectLastTool() override
+	void OnPlacePresize(Point pt, TileIndex tile) override
 	{
-		// User misplaced something - activate last selected tool again
-		if (this->last_user_action == WIDGET_LIST_END)
-			return;
-		Point dummy = {0, 0};
-		this->RaiseWidget(this->last_user_action);
-		this->OnClick(dummy, this->last_user_action, 0);
-		if (this->last_user_action_remove) BuildRailClick_Remove(this);
-	}
-
-	void OnPlacePresize(Point pt, TileIndex tile_from) override
-	{
-		TileIndex tile_to = tile_from;
-
-		if (this->last_user_action == WID_RAT_BUILD_BRIDGE) {
-			tile_to = IsBridgeTile(tile_from) ? GetOtherBridgeEnd(tile_from) : TileVirtXY(pt.x, pt.y);
-		} else {
-			assert(this->last_user_action == WID_RAT_BUILD_TUNNEL);
-			DoCommand(tile_from, _cur_railtype | (TRANSPORT_RAIL << 8), 0, DC_AUTO, CMD_BUILD_TUNNEL);
-			tile_to = _build_tunnel_endtile == 0 ? tile_from : _build_tunnel_endtile;
-		}
-
-		VpSetPresizeRange(tile_from, tile_to);
+		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, TRANSPORT_RAIL, _cur_railtype);
+		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 
 	EventState OnCTRLStateChange() override
@@ -914,7 +856,7 @@ Window *ShowBuildRailToolbar(RailType railtype)
 	if (!Company::IsValidID(_local_company)) return nullptr;
 	if (!ValParamRailtype(railtype)) return nullptr;
 
-	CloseToolbarLinkedWindows();
+	CloseWindowByClass(WC_BUILD_TOOLBAR);
 	_cur_railtype = railtype;
 	_remove_button_clicked = false;
 	return new BuildRailToolbarWindow(&_build_rail_desc, railtype);
@@ -931,11 +873,19 @@ static void HandleStationPlacement(TileIndex start, TileIndex end)
 
 	if (_railstation.orientation == AXIS_X) Swap(numtracks, platlength);
 
-	uint32 p1 = _cur_railtype | _railstation.orientation << 6 | numtracks << 8 | platlength << 16 | _ctrl_pressed << 24;
-	uint32 p2 = _railstation.station_class | _railstation.station_type << 8 | INVALID_STATION << 16;
+	RailStationGUISettings params = _railstation;
+	RailType rt = _cur_railtype;
+	bool adjacent = _ctrl_pressed;
 
-	CommandContainer cmdcont = { ta.tile, p1, p2, CMD_BUILD_RAIL_STATION | CMD_MSG(STR_ERROR_CAN_T_BUILD_RAILROAD_STATION), CcStation, "" };
-	ShowSelectStationIfNeeded(cmdcont, ta);
+	auto proc = [=](bool test, StationID to_join) -> bool {
+		if (test) {
+			return Command<CMD_BUILD_RAIL_STATION>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_RAIL_STATION>()), ta.tile, rt, params.orientation, numtracks, platlength, params.station_class, params.station_type, INVALID_STATION, adjacent).Succeeded();
+		} else {
+			return Command<CMD_BUILD_RAIL_STATION>::Post(STR_ERROR_CAN_T_BUILD_RAILROAD_STATION, CcStation, ta.tile, rt, params.orientation, numtracks, platlength, params.station_class, params.station_type, to_join, adjacent);
+		}
+	};
+
+	ShowSelectStationIfNeeded(ta, proc);
 }
 
 /** Enum referring to the Hotkeys in the build rail station window */
@@ -1068,7 +1018,7 @@ public:
 			_railstation.station_type = std::min<int>(_railstation.station_type, _railstation.station_count - 1);
 
 			NWidgetMatrix *matrix = this->GetWidget<NWidgetMatrix>(WID_BRAS_MATRIX);
-			matrix->SetScrollbar(this->vscroll2, this->vscroll2 ? WID_BRAS_MATRIX_SCROLL : -1);
+			matrix->SetScrollbar(this->vscroll2);
 			matrix->SetCount(_railstation.station_count);
 			matrix->SetClicked(_railstation.station_type);
 
@@ -1253,8 +1203,7 @@ public:
 				}
 				size->width = std::max(size->width, d.width + padding.width);
 				this->line_height = FONT_HEIGHT_NORMAL + WD_MATRIX_TOP + WD_MATRIX_BOTTOM;
-				this->line_height = GetMinButtonSize(this->line_height);
-				size->height = 3 * this->line_height;
+				size->height = 5 * this->line_height;
 				resize->height = this->line_height;
 				break;
 			}
@@ -1295,13 +1244,6 @@ public:
 			case WID_BRAS_MATRIX:
 				fill->height = 1;
 				resize->height = 1;
-				break;
-
-			case WID_BRAS_NEWST_SPACER:
-				size->height = 0;
-				if (_railstation.newstations) {
-					size->height = GetMinButtonSize(FONT_HEIGHT_NORMAL);
-				}
 				break;
 		}
 	}
@@ -1344,8 +1286,7 @@ public:
 				uint row = 0;
 				for (auto station_class : this->station_classes) {
 					if (this->vscroll->IsVisible(statclass)) {
-						DrawString(r.left + WD_MATRIX_LEFT, r.right - WD_MATRIX_RIGHT,
-								Center(row * this->line_height + r.top + WD_MATRIX_TOP, this->line_height),
+						DrawString(r.left + WD_MATRIX_LEFT, r.right - WD_MATRIX_RIGHT, row * this->line_height + r.top + WD_MATRIX_TOP,
 								StationClass::Get(station_class)->name,
 								station_class == _railstation.station_class ? TC_WHITE : TC_BLACK);
 						row++;
@@ -1630,22 +1571,12 @@ static const NWidgetPart _nested_station_builder_widgets[] = {
 						NWidget(NWID_VSCROLLBAR, COLOUR_GREY, WID_BRAS_NEWST_SCROLL),
 					EndContainer(),
 				EndContainer(),
+				NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(144, 11), SetDataTip(STR_STATION_BUILD_ORIENTATION, STR_NULL), SetPadding(1, 2, 0, 0),
 				NWidget(NWID_HORIZONTAL),
-					NWidget(NWID_VERTICAL),
-						NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(144, 11), SetDataTip(STR_STATION_BUILD_ORIENTATION, STR_NULL), SetPadding(1, 2, 0, 0),
-						NWidget(NWID_HORIZONTAL),
-							NWidget(NWID_SPACER), SetMinimalSize(7, 0), SetFill(1, 0),
-							NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAS_PLATFORM_DIR_X), SetSizingType(NWST_BUTTON), SetMinimalSize(66, 60), SetFill(0, 0), SetDataTip(0x0, STR_STATION_BUILD_RAILROAD_ORIENTATION_TOOLTIP), EndContainer(),
-							NWidget(NWID_SPACER), SetMinimalSize(7, 0), SetFill(1, 0),
-							NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAS_PLATFORM_DIR_Y), SetSizingType(NWST_BUTTON), SetMinimalSize(66, 60), SetFill(0, 0), SetDataTip(0x0, STR_STATION_BUILD_RAILROAD_ORIENTATION_TOOLTIP), EndContainer(),
-							NWidget(NWID_SPACER), SetMinimalSize(7, 0), SetFill(1, 0),
-						EndContainer(),
-					EndContainer(),
 					NWidget(NWID_SPACER), SetMinimalSize(7, 0), SetFill(1, 0),
-					NWidget(NWID_VERTICAL),
-						NWidget(NWID_SPACER), SetMinimalSize(1, 0), SetFill(0, 1),
-						NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_BRAS_PLATFORM_DRAG_N_DROP), SetMinimalSize(75, 12), SetDataTip(STR_STATION_BUILD_DRAG_DROP, STR_STATION_BUILD_DRAG_DROP_TOOLTIP),
-					EndContainer(),
+					NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAS_PLATFORM_DIR_X), SetMinimalSize(66, 60), SetFill(0, 0), SetDataTip(0x0, STR_STATION_BUILD_RAILROAD_ORIENTATION_TOOLTIP), EndContainer(),
+					NWidget(NWID_SPACER), SetMinimalSize(2, 0), SetFill(1, 0),
+					NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAS_PLATFORM_DIR_Y), SetMinimalSize(66, 60), SetFill(0, 0), SetDataTip(0x0, STR_STATION_BUILD_RAILROAD_ORIENTATION_TOOLTIP), EndContainer(),
 					NWidget(NWID_SPACER), SetMinimalSize(7, 0), SetFill(1, 0),
 				EndContainer(),
 				NWidget(WWT_LABEL, COLOUR_DARK_GREEN, WID_BRAS_SHOW_NEWST_TYPE), SetMinimalSize(144, 11), SetDataTip(STR_ORANGE_STRING, STR_NULL), SetPadding(1, 2, 4, 2),
@@ -1675,36 +1606,31 @@ static const NWidgetPart _nested_station_builder_widgets[] = {
 				EndContainer(),
 				NWidget(NWID_SPACER), SetMinimalSize(0, 2),
 				NWidget(NWID_HORIZONTAL),
-					NWidget(NWID_VERTICAL),
-						NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(144, 11), SetDataTip(STR_STATION_BUILD_COVERAGE_AREA_TITLE, STR_NULL), SetPadding(3, 2, 0, 0),
-						NWidget(NWID_HORIZONTAL),
-							NWidget(NWID_SPACER), SetMinimalSize(2, 0), SetFill(1, 0),
-							NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_BRAS_HIGHLIGHT_OFF), SetMinimalSize(60, 12),
-														SetDataTip(STR_STATION_BUILD_COVERAGE_OFF, STR_STATION_BUILD_COVERAGE_AREA_OFF_TOOLTIP),
-							NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_BRAS_HIGHLIGHT_ON), SetMinimalSize(60, 12),
-														SetDataTip(STR_STATION_BUILD_COVERAGE_ON, STR_STATION_BUILD_COVERAGE_AREA_ON_TOOLTIP),
-							NWidget(NWID_SPACER), SetMinimalSize(2, 0), SetFill(1, 0),
-						EndContainer(),
-					EndContainer(),
+					NWidget(NWID_SPACER), SetMinimalSize(2, 0), SetFill(1, 0),
+					NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_BRAS_PLATFORM_DRAG_N_DROP), SetMinimalSize(75, 12), SetDataTip(STR_STATION_BUILD_DRAG_DROP, STR_STATION_BUILD_DRAG_DROP_TOOLTIP),
+					NWidget(NWID_SPACER), SetMinimalSize(2, 0), SetFill(1, 0),
 				EndContainer(),
-				NWidget(NWID_SPACER), SetMinimalSize(0, 2),
+				NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetMinimalSize(144, 11), SetDataTip(STR_STATION_BUILD_COVERAGE_AREA_TITLE, STR_NULL), SetPadding(3, 2, 0, 0),
+				NWidget(NWID_HORIZONTAL),
+					NWidget(NWID_SPACER), SetMinimalSize(2, 0), SetFill(1, 0),
+					NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_BRAS_HIGHLIGHT_OFF), SetMinimalSize(60, 12),
+												SetDataTip(STR_STATION_BUILD_COVERAGE_OFF, STR_STATION_BUILD_COVERAGE_AREA_OFF_TOOLTIP),
+					NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_BRAS_HIGHLIGHT_ON), SetMinimalSize(60, 12),
+												SetDataTip(STR_STATION_BUILD_COVERAGE_ON, STR_STATION_BUILD_COVERAGE_AREA_ON_TOOLTIP),
+					NWidget(NWID_SPACER), SetMinimalSize(2, 0), SetFill(1, 0),
+				EndContainer(),
 			EndContainer(),
 			NWidget(NWID_SELECTION, INVALID_COLOUR, WID_BRAS_SHOW_NEWST_MATRIX),
 				/* We need an additional background for the matrix, as the matrix cannot handle the scrollbar due to not being an NWidgetCore. */
-				NWidget(NWID_VERTICAL),
-					NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetScrollbar(WID_BRAS_MATRIX_SCROLL),
-						NWidget(NWID_HORIZONTAL),
-							NWidget(NWID_MATRIX, COLOUR_DARK_GREEN, WID_BRAS_MATRIX), SetScrollbar(WID_BRAS_MATRIX_SCROLL), SetPIP(0, 2, 0),
-								NWidget(WWT_PANEL, COLOUR_DARK_GREEN, WID_BRAS_IMAGE), SetMinimalSize(66, 60),
-										SetFill(0, 0), SetResize(0, 0), SetDataTip(0x0, STR_STATION_BUILD_STATION_TYPE_TOOLTIP), SetScrollbar(WID_BRAS_MATRIX_SCROLL),
-								EndContainer(),
+				NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetScrollbar(WID_BRAS_MATRIX_SCROLL),
+					NWidget(NWID_HORIZONTAL),
+						NWidget(NWID_MATRIX, COLOUR_DARK_GREEN, WID_BRAS_MATRIX), SetScrollbar(WID_BRAS_MATRIX_SCROLL), SetPIP(0, 2, 0),
+							NWidget(WWT_PANEL, COLOUR_DARK_GREEN, WID_BRAS_IMAGE), SetMinimalSize(66, 60),
+									SetFill(0, 0), SetResize(0, 0), SetDataTip(0x0, STR_STATION_BUILD_STATION_TYPE_TOOLTIP), SetScrollbar(WID_BRAS_MATRIX_SCROLL),
 							EndContainer(),
-							NWidget(NWID_VSCROLLBAR, COLOUR_DARK_GREEN, WID_BRAS_MATRIX_SCROLL),
 						EndContainer(),
+						NWidget(NWID_VSCROLLBAR, COLOUR_DARK_GREEN, WID_BRAS_MATRIX_SCROLL),
 					EndContainer(),
-					NWidget(WWT_LABEL, COLOUR_DARK_GREEN, WID_BRAS_NEWST_SPACER), SetDataTip(STR_EMPTY, STR_NULL),
-					NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetDataTip(STR_EMPTY, STR_NULL),
-					NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetDataTip(STR_EMPTY, STR_NULL),
 				EndContainer(),
 			EndContainer(),
 		EndContainer(),
@@ -1722,7 +1648,7 @@ static const NWidgetPart _nested_station_builder_widgets[] = {
 
 /** High level window description of the station-build window (default & newGRF) */
 static WindowDesc _station_builder_desc(
-	WDP_AUTO, "build_station_rail", 0, 0,
+	WDP_AUTO, "build_station_rail", 350, 0,
 	WC_BUILD_STATION, WC_BUILD_TOOLBAR,
 	WDF_CONSTRUCTION,
 	_nested_station_builder_widgets, lengthof(_nested_station_builder_widgets),
@@ -1867,6 +1793,9 @@ public:
 				_cur_signal_type = (SignalType)((uint)((widget - WID_BS_SEMAPHORE_NORM) % (SIGTYPE_LAST + 1)));
 				_cur_signal_variant = widget >= WID_BS_ELECTRIC_NORM ? SIG_ELECTRIC : SIG_SEMAPHORE;
 
+				/* Update default (last-used) signal type in config file. */
+				_settings_client.gui.default_signal_type = _cur_signal_type;
+
 				/* If 'remove' button of rail build toolbar is active, disable it. */
 				if (_remove_button_clicked) {
 					Window *w = FindWindowById(WC_BUILD_TOOLBAR, TRANSPORT_RAIL);
@@ -1891,6 +1820,12 @@ public:
 					_settings_client.gui.drag_signals_density++;
 					SetWindowDirty(WC_GAME_OPTIONS, WN_GAME_OPTIONS_GAME_SETTINGS);
 				}
+				break;
+
+			case WID_BS_TOGGLE_SIZE:
+				_settings_client.gui.signal_gui_mode = (_settings_client.gui.signal_gui_mode == SIGNAL_GUI_ALL) ? SIGNAL_GUI_PATH : SIGNAL_GUI_ALL;
+				this->SetSignalUIMode();
+				this->ReInit();
 				break;
 
 			default: break;
@@ -1921,6 +1856,7 @@ static const NWidgetPart _nested_signal_builder_widgets[] = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, COLOUR_DARK_GREEN),
 		NWidget(WWT_CAPTION, COLOUR_DARK_GREEN, WID_BS_CAPTION), SetDataTip(STR_BUILD_SIGNAL_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_IMGBTN, COLOUR_DARK_GREEN, WID_BS_TOGGLE_SIZE), SetDataTip(SPR_LARGE_SMALL_WINDOW, STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP),
 	EndContainer(),
 	NWidget(NWID_VERTICAL, NC_EQUALSIZE),
 		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
@@ -1939,9 +1875,6 @@ static const NWidgetPart _nested_signal_builder_widgets[] = {
 			NWidget(WWT_PANEL, COLOUR_DARK_GREEN, WID_BS_SEMAPHORE_PBS), SetDataTip(STR_NULL, STR_BUILD_SIGNAL_SEMAPHORE_PBS_TOOLTIP), EndContainer(), SetFill(1, 1),
 			NWidget(WWT_PANEL, COLOUR_DARK_GREEN, WID_BS_SEMAPHORE_PBS_OWAY), SetDataTip(STR_NULL, STR_BUILD_SIGNAL_SEMAPHORE_PBS_OWAY_TOOLTIP), EndContainer(), SetFill(1, 1),
 			NWidget(WWT_IMGBTN, COLOUR_DARK_GREEN, WID_BS_CONVERT), SetDataTip(SPR_IMG_SIGNAL_CONVERT, STR_BUILD_SIGNAL_CONVERT_TOOLTIP), SetFill(1, 1),
-			NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetDataTip(STR_NULL, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP), SetFill(1, 1),
-				NWidget(WWT_LABEL, COLOUR_DARK_GREEN, WID_BS_DRAG_SIGNALS_DENSITY_LABEL), SetDataTip(STR_ORANGE_INT, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP), SetFill(1, 1),
-			EndContainer(),
 		EndContainer(),
 		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
 			NWidget(NWID_SELECTION, INVALID_COLOUR, WID_BS_ELECTRIC_NORM_SEL),
@@ -1959,10 +1892,14 @@ static const NWidgetPart _nested_signal_builder_widgets[] = {
 			NWidget(WWT_PANEL, COLOUR_DARK_GREEN, WID_BS_ELECTRIC_PBS), SetDataTip(STR_NULL, STR_BUILD_SIGNAL_ELECTRIC_PBS_TOOLTIP), EndContainer(), SetFill(1, 1),
 			NWidget(WWT_PANEL, COLOUR_DARK_GREEN, WID_BS_ELECTRIC_PBS_OWAY), SetDataTip(STR_NULL, STR_BUILD_SIGNAL_ELECTRIC_PBS_OWAY_TOOLTIP), EndContainer(), SetFill(1, 1),
 			NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetDataTip(STR_NULL, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP), SetFill(1, 1),
-				NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_BS_DRAG_SIGNALS_DENSITY_DECREASE), SetSizingType(NWST_BUTTON), SetMinimalSize(9, 12), SetDataTip(AWV_DECREASE, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_DECREASE_TOOLTIP),
-			EndContainer(),
-			NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetDataTip(STR_NULL, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP), SetFill(1, 1),
-				NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_BS_DRAG_SIGNALS_DENSITY_INCREASE), SetSizingType(NWST_BUTTON), SetMinimalSize(9, 12), SetDataTip(AWV_INCREASE, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_INCREASE_TOOLTIP),
+				NWidget(WWT_LABEL, COLOUR_DARK_GREEN, WID_BS_DRAG_SIGNALS_DENSITY_LABEL), SetDataTip(STR_ORANGE_INT, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP), SetFill(1, 1),
+				NWidget(NWID_HORIZONTAL), SetPIP(2, 0, 2),
+					NWidget(NWID_SPACER), SetFill(1, 0),
+					NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_BS_DRAG_SIGNALS_DENSITY_DECREASE), SetMinimalSize(9, 12), SetDataTip(AWV_DECREASE, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_DECREASE_TOOLTIP),
+					NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_BS_DRAG_SIGNALS_DENSITY_INCREASE), SetMinimalSize(9, 12), SetDataTip(AWV_INCREASE, STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_INCREASE_TOOLTIP),
+					NWidget(NWID_SPACER), SetFill(1, 0),
+				EndContainer(),
+				NWidget(NWID_SPACER), SetMinimalSize(0, 2), SetFill(1, 0),
 			EndContainer(),
 		EndContainer(),
 	EndContainer(),
@@ -2034,18 +1971,18 @@ static const NWidgetPart _nested_build_depot_widgets[] = {
 		NWidget(NWID_HORIZONTAL_LTR),
 			NWidget(NWID_SPACER), SetMinimalSize(3, 0), SetFill(1, 0),
 			NWidget(NWID_VERTICAL),
-				NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAD_DEPOT_NW), SetSizingType(NWST_BUTTON), SetMinimalSize(66, 50), SetDataTip(0x0, STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP),
+				NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAD_DEPOT_NW), SetMinimalSize(66, 50), SetDataTip(0x0, STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP),
 				EndContainer(),
 				NWidget(NWID_SPACER), SetMinimalSize(0, 2),
-				NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAD_DEPOT_SW), SetSizingType(NWST_BUTTON), SetMinimalSize(66, 50), SetDataTip(0x0, STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP),
+				NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAD_DEPOT_SW), SetMinimalSize(66, 50), SetDataTip(0x0, STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP),
 				EndContainer(),
 			EndContainer(),
 			NWidget(NWID_SPACER), SetMinimalSize(2, 0),
 			NWidget(NWID_VERTICAL),
-				NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAD_DEPOT_NE), SetSizingType(NWST_BUTTON), SetMinimalSize(66, 50), SetDataTip(0x0, STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP),
+				NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAD_DEPOT_NE), SetMinimalSize(66, 50), SetDataTip(0x0, STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP),
 				EndContainer(),
 				NWidget(NWID_SPACER), SetMinimalSize(0, 2),
-				NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAD_DEPOT_SE), SetSizingType(NWST_BUTTON), SetMinimalSize(66, 50), SetDataTip(0x0, STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP),
+				NWidget(WWT_PANEL, COLOUR_GREY, WID_BRAD_DEPOT_SE), SetMinimalSize(66, 50), SetDataTip(0x0, STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP),
 				EndContainer(),
 			EndContainer(),
 			NWidget(NWID_SPACER), SetMinimalSize(3, 0), SetFill(1, 0),
@@ -2072,11 +2009,12 @@ struct BuildRailWaypointWindow : PickerWindowBase {
 		this->CreateNestedTree();
 
 		NWidgetMatrix *matrix = this->GetWidget<NWidgetMatrix>(WID_BRW_WAYPOINT_MATRIX);
-		matrix->SetScrollbar(this->GetScrollbar(WID_BRW_SCROLL), WID_BRW_SCROLL);
+		matrix->SetScrollbar(this->GetScrollbar(WID_BRW_SCROLL));
 
 		this->FinishInitNested(TRANSPORT_RAIL);
 
 		matrix->SetCount(_waypoint_count);
+		if (_cur_waypoint_type >= _waypoint_count) _cur_waypoint_type = 0;
 		matrix->SetClicked(_cur_waypoint_type);
 	}
 
@@ -2265,7 +2203,7 @@ void InitializeRailGUI()
 	SetDefaultRailGui();
 
 	_convert_signal_button = false;
-	_cur_signal_type = SIGTYPE_PBS_ONEWAY;
+	_cur_signal_type = _settings_client.gui.default_signal_type;
 	ResetSignalVariant();
 }
 

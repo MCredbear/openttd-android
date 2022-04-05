@@ -80,7 +80,7 @@ typedef unsigned long in_addr_t;
 #	include <net/if.h>
 /* According to glibc/NEWS, <ifaddrs.h> appeared in glibc-2.3. */
 #	if !defined(__sgi__) && !defined(SUNOS) && !defined(__INNOTEK_LIBC__) \
-	   && !(defined(__GLIBC__) && (__GLIBC__ <= 2) && (__GLIBC_MINOR__ <= 2)) && !defined(__dietlibc__) && !defined(HPUX) && !defined(__ANDROID__)
+	   && !(defined(__GLIBC__) && (__GLIBC__ <= 2) && (__GLIBC_MINOR__ <= 2)) && !defined(__dietlibc__) && !defined(HPUX)
 /* If for any reason ifaddrs.h does not exist on your system, comment out
  *   the following two lines and an alternative way will be used to fetch
  *   the list of IPs from the system. */
@@ -171,6 +171,29 @@ typedef unsigned long in_addr_t;
 
 #endif /* OS/2 */
 
+#ifdef __EMSCRIPTEN__
+/**
+ * Emscripten doesn't set 'addrlen' for accept(), getsockname(), getpeername()
+ * and recvfrom(), which confuses other functions and causes them to crash.
+ * This function needs to be called after these four functions to make sure
+ * 'addrlen' is patched up.
+ *
+ * https://github.com/emscripten-core/emscripten/issues/12996
+ *
+ * @param address The address returned by those four functions.
+ * @return The correct value for addrlen.
+ */
+static inline socklen_t FixAddrLenForEmscripten(struct sockaddr_storage &address)
+{
+	switch (address.ss_family) {
+		case AF_INET6: return sizeof(struct sockaddr_in6);
+		case AF_INET: return sizeof(struct sockaddr_in);
+		default: NOT_REACHED();
+	}
+}
+#endif
+
+
 bool SetNonBlocking(SOCKET d);
 bool SetNoDelay(SOCKET d);
 bool SetReusePort(SOCKET d);
@@ -179,9 +202,5 @@ NetworkError GetSocketError(SOCKET d);
 /* Make sure these structures have the size we expect them to be */
 static_assert(sizeof(in_addr)  ==  4); ///< IPv4 addresses should be 4 bytes.
 static_assert(sizeof(in6_addr) == 16); ///< IPv6 addresses should be 16 bytes.
-
-#if defined(__EMSCRIPTEN__)
-#	include "em_proxy.h"
-#endif /* __EMSCRIPTEN__ */
 
 #endif /* NETWORK_CORE_OS_ABSTRACTION_H */

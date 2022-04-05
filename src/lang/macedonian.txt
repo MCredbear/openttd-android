@@ -842,7 +842,7 @@ STR_SEA_LEVEL_CUSTOM_PERCENTAGE                                 :Прилаго�
 
 ###length 7
 
-###length 3
+###length 4
 
 
 # Settings tree window
@@ -1034,6 +1034,7 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN               :Пристиг�
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER             :Пристигнување на прво возило на конкурентска станица: {STRING}
 
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Несреќи / хаварии: {STRING}
+
 
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Информации за компанијата: {STRING}
 

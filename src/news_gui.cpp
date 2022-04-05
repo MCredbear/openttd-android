@@ -35,6 +35,7 @@
 #include "guitimer_func.h"
 #include "group_gui.h"
 #include "zoom_func.h"
+#include "news_cmd.h"
 
 #include "widgets/news_widget.h"
 
@@ -168,7 +169,7 @@ static const NWidgetPart _nested_thin_news_widgets[] = {
 			EndContainer(),
 		EndContainer(),
 		NWidget(WWT_EMPTY, COLOUR_WHITE, WID_N_MESSAGE), SetMinimalSize(428, 48), SetFill(1, 0), SetPadding(0, 5, 0, 5),
-		NWidget(NWID_VIEWPORT, INVALID_COLOUR, WID_N_VIEWPORT), SetSizingType(NWST_VIEWPORT), SetMinimalSize(426, 70), SetPadding(1, 2, 2, 2),
+		NWidget(NWID_VIEWPORT, INVALID_COLOUR, WID_N_VIEWPORT), SetMinimalSize(426, 70), SetPadding(1, 2, 2, 2),
 	EndContainer(),
 };
 
@@ -192,9 +193,9 @@ static const NWidgetPart _nested_small_news_widgets[] = {
 	/* Main part */
 	NWidget(WWT_PANEL, COLOUR_LIGHT_BLUE, WID_N_HEADLINE),
 		NWidget(WWT_INSET, COLOUR_LIGHT_BLUE, WID_N_INSET), SetPadding(2, 2, 2, 2),
-			NWidget(NWID_VIEWPORT, INVALID_COLOUR, WID_N_VIEWPORT), SetMinimalSize(274, 47), SetFill(1, 0), SetSizingType(NWST_VIEWPORT),
+			NWidget(NWID_VIEWPORT, INVALID_COLOUR, WID_N_VIEWPORT), SetMinimalSize(274, 47), SetFill(1, 0),
 		EndContainer(),
-		NWidget(WWT_EMPTY, COLOUR_WHITE, WID_N_MESSAGE), SetMinimalSize(275, 20), SetFill(1, 0), SetPadding(0, 5, 0, 5), SetSizingType(NWST_BUTTON),
+		NWidget(WWT_EMPTY, COLOUR_WHITE, WID_N_MESSAGE), SetMinimalSize(275, 20), SetFill(1, 0), SetPadding(0, 5, 0, 5),
 	EndContainer(),
 };
 
@@ -231,6 +232,7 @@ static NewsTypeData _news_type_data[] = {
 	NewsTypeData("news_display.arrival_player",    60, SND_1D_APPLAUSE ),  ///< NT_ARRIVAL_COMPANY
 	NewsTypeData("news_display.arrival_other",     60, SND_1D_APPLAUSE ),  ///< NT_ARRIVAL_OTHER
 	NewsTypeData("news_display.accident",          90, SND_BEGIN       ),  ///< NT_ACCIDENT
+	NewsTypeData("news_display.accident_other",    90, SND_BEGIN       ),  ///< NT_ACCIDENT_OTHER
 	NewsTypeData("news_display.company_info",      60, SND_BEGIN       ),  ///< NT_COMPANY_INFO
 	NewsTypeData("news_display.open",              90, SND_BEGIN       ),  ///< NT_INDUSTRY_OPEN
 	NewsTypeData("news_display.close",             90, SND_BEGIN       ),  ///< NT_INDUSTRY_CLOSE
@@ -309,7 +311,7 @@ struct NewsWindow : Window {
 		/* Initialize viewport if it exists. */
 		NWidgetViewport *nvp = this->GetWidget<NWidgetViewport>(WID_N_VIEWPORT);
 		if (nvp != nullptr) {
-			nvp->InitializeViewport(this, ni->reftype1 == NR_VEHICLE ? 0x80000000 | ni->ref1 : GetReferenceTile(ni->reftype1, ni->ref1), ZOOM_LVL_NEWS);
+			nvp->InitializeViewport(this, ni->reftype1 == NR_VEHICLE ? 0x80000000 | ni->ref1 : (uint32)GetReferenceTile(ni->reftype1, ni->ref1), ZOOM_LVL_NEWS);
 			if (this->ni->flags & NF_NO_TRANSPARENT) nvp->disp_flags |= ND_NO_TRANSPARENCY;
 			if ((this->ni->flags & NF_INCOLOUR) == 0) {
 				nvp->disp_flags |= ND_SHADE_GREY;
@@ -360,7 +362,6 @@ struct NewsWindow : Window {
 				break;
 
 			case WID_N_MESSAGE:
-				size->width = std::max(GetMinButtonSize() * 8, size->width);
 				CopyInDParam(0, this->ni->params, lengthof(this->ni->params));
 				str = this->ni->string_id;
 				break;
@@ -386,7 +387,6 @@ struct NewsWindow : Window {
 					Dimension d2 = GetStringBoundingBox(this->GetWidget<NWidgetCore>(WID_N_SHOW_GROUP)->widget_data);
 					d2.height += WD_CAPTIONTEXT_TOP + WD_CAPTIONTEXT_BOTTOM;
 					d2.width += WD_CAPTIONTEXT_LEFT + WD_CAPTIONTEXT_RIGHT;
-					d2.width = std::max(d2.width, GetMinButtonSize(FONT_HEIGHT_NORMAL));
 					*size = d2;
 				} else {
 					/* Hide 'Show group window' button if this news is not about a vehicle. */
@@ -422,7 +422,7 @@ struct NewsWindow : Window {
 	{
 		switch (widget) {
 			case WID_N_CAPTION:
-				DrawCaption(r, COLOUR_LIGHT_BLUE, this->owner, TC_FROMSTRING, STR_NEWS_MESSAGE_CAPTION, SA_CENTER, this->GetWidget<NWidgetCore>(WID_N_CAPTION), this);
+				DrawCaption(r, COLOUR_LIGHT_BLUE, this->owner, TC_FROMSTRING, STR_NEWS_MESSAGE_CAPTION, SA_CENTER);
 				break;
 
 			case WID_N_PANEL:
@@ -836,23 +836,17 @@ void AddNewsItem(StringID string, NewsType type, NewsFlag flags, NewsReferenceTy
 
 /**
  * Create a new custom news item.
- * @param tile unused
  * @param flags type of operation
- * @param p1 various bitstuffed elements
- * - p1 = (bit  0 -  7) - NewsType of the message.
- * - p1 = (bit  8 - 15) - NewsReferenceType of first reference.
- * - p1 = (bit 16 - 23) - Company this news message is for.
- * @param p2 First reference of the news message.
+ * @aram type NewsType of the message.
+ * @param reftype1 NewsReferenceType of first reference.
+ * @param company Company this news message is for.
+ * @param reference First reference of the news message.
  * @param text The text of the news message.
  * @return the cost of this operation or an error
  */
-CommandCost CmdCustomNewsItem(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const std::string &text)
+CommandCost CmdCustomNewsItem(DoCommandFlag flags, NewsType type, NewsReferenceType reftype1, CompanyID company, uint32 reference, const std::string &text)
 {
 	if (_current_company != OWNER_DEITY) return CMD_ERROR;
-
-	NewsType type = (NewsType)GB(p1, 0, 8);
-	NewsReferenceType reftype1 = (NewsReferenceType)GB(p1, 8, 8);
-	CompanyID company = (CompanyID)GB(p1, 16, 8);
 
 	if (company != INVALID_OWNER && !Company::IsValidID(company)) return CMD_ERROR;
 	if (type >= NT_END) return CMD_ERROR;
@@ -861,27 +855,27 @@ CommandCost CmdCustomNewsItem(TileIndex tile, DoCommandFlag flags, uint32 p1, ui
 	switch (reftype1) {
 		case NR_NONE: break;
 		case NR_TILE:
-			if (!IsValidTile(p2)) return CMD_ERROR;
+			if (!IsValidTile(reference)) return CMD_ERROR;
 			break;
 
 		case NR_VEHICLE:
-			if (!Vehicle::IsValidID(p2)) return CMD_ERROR;
+			if (!Vehicle::IsValidID(reference)) return CMD_ERROR;
 			break;
 
 		case NR_STATION:
-			if (!Station::IsValidID(p2)) return CMD_ERROR;
+			if (!Station::IsValidID(reference)) return CMD_ERROR;
 			break;
 
 		case NR_INDUSTRY:
-			if (!Industry::IsValidID(p2)) return CMD_ERROR;
+			if (!Industry::IsValidID(reference)) return CMD_ERROR;
 			break;
 
 		case NR_TOWN:
-			if (!Town::IsValidID(p2)) return CMD_ERROR;
+			if (!Town::IsValidID(reference)) return CMD_ERROR;
 			break;
 
 		case NR_ENGINE:
-			if (!Engine::IsValidID(p2)) return CMD_ERROR;
+			if (!Engine::IsValidID(reference)) return CMD_ERROR;
 			break;
 
 		default: return CMD_ERROR;
@@ -892,7 +886,7 @@ CommandCost CmdCustomNewsItem(TileIndex tile, DoCommandFlag flags, uint32 p1, ui
 	if (flags & DC_EXEC) {
 		NewsStringData *news = new NewsStringData(text);
 		SetDParamStr(0, news->string);
-		AddNewsItem(STR_NEWS_CUSTOM_ITEM, type, NF_NORMAL, reftype1, p2, NR_NONE, UINT32_MAX, news);
+		AddNewsItem(STR_NEWS_CUSTOM_ITEM, type, NF_NORMAL, reftype1, reference, NR_NONE, UINT32_MAX, news);
 	}
 
 	return CommandCost();
@@ -1144,7 +1138,7 @@ struct MessageHistoryWindow : Window {
 	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		if (widget == WID_MH_BACKGROUND) {
-			this->line_height = GetMinButtonSize(FONT_HEIGHT_NORMAL + 2);
+			this->line_height = FONT_HEIGHT_NORMAL + 2;
 			resize->height = this->line_height;
 
 			/* Months are off-by-one, so it's actually 8. Not using
@@ -1175,7 +1169,7 @@ struct MessageHistoryWindow : Window {
 		}
 
 		/* Fill the widget with news items. */
-		int y = Center(r.top + this->top_spacing, this->line_height, FONT_HEIGHT_NORMAL);
+		int y = r.top + this->top_spacing;
 		bool rtl = _current_text_dir == TD_RTL;
 		uint date_left  = rtl ? r.right - WD_FRAMERECT_RIGHT - this->date_width : r.left + WD_FRAMERECT_LEFT;
 		uint date_right = rtl ? r.right - WD_FRAMERECT_RIGHT : r.left + WD_FRAMERECT_LEFT + this->date_width;

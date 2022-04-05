@@ -19,7 +19,7 @@
 #include "strings_func.h"
 #include "zoom_func.h"
 #include "tree_map.h"
-#include "window_func.h"
+#include "tree_cmd.h"
 
 #include "widgets/tree_widget.h"
 
@@ -90,11 +90,6 @@ class BuildTreesWindow : public Window
 
 	int tree_to_plant;  ///< Tree number to plant, \c TREE_INVALID for a random tree.
 	PlantingMode mode;  ///< Current mode for planting
-
-	~BuildTreesWindow()
-	{
-		if (_thd.GetCallbackWnd() == this) this->OnPlaceObjectAbort();
-	}
 
 	/**
 	 * Update the GUI and enable/disable planting to reflect selected options.
@@ -226,7 +221,6 @@ public:
 		} else {
 			VpStartDragging(DDSP_PLANT_TREES);
 		}
-		MoveAllWindowsOffScreen();
 	}
 
 	void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt) override
@@ -237,7 +231,7 @@ public:
 			TileIndex tile = TileVirtXY(pt.x, pt.y);
 
 			if (this->mode == PM_NORMAL) {
-				DoCommandP(tile, this->tree_to_plant, tile, CMD_PLANT_TREE);
+				Command<CMD_PLANT_TREE>::Post(tile, tile, this->tree_to_plant);
 			} else {
 				this->DoPlantForest(tile);
 			}
@@ -247,17 +241,14 @@ public:
 	void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile) override
 	{
 		if (_game_mode != GM_EDITOR && this->mode == PM_NORMAL && pt.x != -1 && select_proc == DDSP_PLANT_TREES) {
-			DoCommandP(end_tile, this->tree_to_plant, start_tile, CMD_PLANT_TREE | CMD_MSG(STR_ERROR_CAN_T_PLANT_TREE_HERE));
+			Command<CMD_PLANT_TREE>::Post(STR_ERROR_CAN_T_PLANT_TREE_HERE, end_tile, start_tile, this->tree_to_plant);
 		}
-		MoveAllHiddenWindowsBackToScreen();
 	}
 
 	void OnPlaceObjectAbort() override
 	{
 		this->tree_to_plant = -1;
 		this->UpdateMode();
-		MoveAllHiddenWindowsBackToScreen();
-		ResetObjectToPlace();
 	}
 };
 

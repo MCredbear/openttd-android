@@ -27,6 +27,7 @@
 #include "core/geometry_func.hpp"
 #include "gamelog.h"
 #include "stringfilter_type.h"
+#include "misc_cmd.h"
 
 #include "widgets/fios_widget.h"
 
@@ -34,9 +35,6 @@
 #include "table/strings.h"
 
 #include "safeguards.h"
-#ifdef __ANDROID__
-#include <SDL_android.h>
-#endif
 
 LoadCheckData _load_check_data;    ///< Data loaded from save during SL_LOAD_CHECK.
 
@@ -121,9 +119,6 @@ static const NWidgetPart _nested_load_dialog_widgets[] = {
 					NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SL_NEWGRF_INFO), SetDataTip(STR_INTRO_NEWGRF_SETTINGS, STR_NULL), SetFill(1, 0), SetResize(1, 0),
 					NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SL_LOAD_BUTTON), SetDataTip(STR_SAVELOAD_LOAD_BUTTON, STR_SAVELOAD_LOAD_TOOLTIP), SetFill(1, 0), SetResize(1, 0),
 				EndContainer(),
-			EndContainer(),
-			NWidget(NWID_HORIZONTAL),
-				NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SL_LOAD_NETWORK_BUTTON), SetDataTip(STR_SAVELOAD_LOAD_NETWORK_BUTTON, STR_SAVELOAD_LOAD_NETWORK_TOOLTIP), SetFill(1, 0), SetResize(1, 0),
 				NWidget(WWT_RESIZEBOX, COLOUR_GREY),
 			EndContainer(),
 		EndContainer(),
@@ -222,7 +217,7 @@ static const NWidgetPart _nested_save_dialog_widgets[] = {
 		NWidget(WWT_PANEL, COLOUR_GREY),
 			NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SL_DETAILS), SetResize(1, 1), SetFill(1, 1),
 			NWidget(NWID_HORIZONTAL),
-				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_SL_SAVE_NETWORK_BUTTON), SetDataTip(STR_SAVELOAD_SAVE_NETWORK_BUTTON, STR_SAVELOAD_SAVE_NETWORK_TOOLTIP), SetFill(1, 1), SetResize(1, 0),
+				NWidget(NWID_SPACER), SetResize(1, 0), SetFill(1, 1),
 				NWidget(WWT_RESIZEBOX, COLOUR_GREY),
 			EndContainer(),
 		EndContainer(),
@@ -360,12 +355,11 @@ public:
 		this->LowerWidget(WID_SL_DRIVES_DIRECTORIES_LIST);
 		this->querystrings[WID_SL_FILTER] = &this->filter_editbox;
 		this->filter_editbox.cancel_button = QueryString::ACTION_CLEAR;
-		if (this->fop == SLO_SAVE) this->SetWidgetLoweredState(WID_SL_SAVE_NETWORK_BUTTON, _settings_client.gui.save_to_network);
 
 		/* pause is only used in single-player, non-editor mode, non-menu mode. It
 		 * will be unpaused in the WE_DESTROY event handler. */
 		if (_game_mode != GM_MENU && !_networking && _game_mode != GM_EDITOR) {
-			DoCommandP(0, PM_PAUSED_SAVELOAD, 1, CMD_PAUSE);
+			Command<CMD_PAUSE>::Post(PM_PAUSED_SAVELOAD, true);
 		}
 		SetObjectToPlace(SPR_CURSOR_ZZZ, PAL_NONE, HT_NONE, WC_MAIN_WINDOW, 0);
 
@@ -409,7 +403,7 @@ public:
 	{
 		/* pause is only used in single-player, non-editor mode, non menu mode */
 		if (!_networking && _game_mode != GM_EDITOR && _game_mode != GM_MENU) {
-			DoCommandP(0, PM_PAUSED_SAVELOAD, 0, CMD_PAUSE);
+			Command<CMD_PAUSE>::Post(PM_PAUSED_SAVELOAD, false);
 		}
 		this->Window::Close();
 	}
@@ -459,7 +453,7 @@ public:
 					} else if (item == this->highlighted) {
 						GfxFillRect(r.left + 1, y, r.right, y + this->resize.step_height, PC_VERY_DARK_BLUE);
 					}
-					DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, Center(y, this->resize.step_height), item->title, _fios_colours[GetDetailedFileType(item->type)]);
+					DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, item->title, _fios_colours[GetDetailedFileType(item->type)]);
 					y += this->resize.step_height;
 					if (y >= this->vscroll->GetCapacity() * this->resize.step_height + r.top + WD_FRAMERECT_TOP) break;
 				}
@@ -569,8 +563,8 @@ public:
 				break;
 
 			case WID_SL_DRIVES_DIRECTORIES_LIST:
-				resize->height = GetMinButtonSize(FONT_HEIGHT_NORMAL);
-				size->height = resize->height * 5 + WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
+				resize->height = FONT_HEIGHT_NORMAL;
+				size->height = resize->height * 10 + WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
 				break;
 			case WID_SL_SORT_BYNAME:
 			case WID_SL_SORT_BYDATE: {
@@ -723,17 +717,6 @@ public:
 			case WID_SL_SAVE_GAME: // Save game
 				/* Note, this is also called via the OSK; and we need to lower the button. */
 				this->HandleButtonClick(WID_SL_SAVE_GAME);
-				break;
-
-			case WID_SL_SAVE_NETWORK_BUTTON:
-				_settings_client.gui.save_to_network = !_settings_client.gui.save_to_network;
-				this->SetWidgetLoweredState(WID_SL_SAVE_NETWORK_BUTTON, _settings_client.gui.save_to_network);
-				this->SetDirty();
-				break;
-
-			case WID_SL_LOAD_NETWORK_BUTTON:
-				_file_to_saveload.cloud_load = true;
-				this->Close();
 				break;
 		}
 	}

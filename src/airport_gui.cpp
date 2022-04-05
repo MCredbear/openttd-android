@@ -27,7 +27,8 @@
 #include "vehicle_func.h"
 #include "gui.h"
 #include "command_func.h"
-#include "build_confirmation_func.h"
+#include "airport_cmd.h"
+#include "station_cmd.h"
 
 #include "widgets/airport_widget.h"
 
@@ -42,7 +43,7 @@ static void ShowBuildAirportPicker(Window *parent);
 
 SpriteID GetCustomAirportSprite(const AirportSpec *as, byte layout);
 
-void CcBuildAirport(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcBuildAirport(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Failed()) return;
 
@@ -57,13 +58,20 @@ void CcBuildAirport(const CommandCost &result, TileIndex tile, uint32 p1, uint32
 static void PlaceAirport(TileIndex tile)
 {
 	if (_selected_airport_index == -1) return;
-	uint32 p2 = _ctrl_pressed;
-	SB(p2, 16, 16, INVALID_STATION); // no station to join
 
-	uint32 p1 = AirportClass::Get(_selected_airport_class)->GetSpec(_selected_airport_index)->GetIndex();
-	p1 |= _selected_airport_layout << 8;
-	CommandContainer cmdcont = { tile, p1, p2, CMD_BUILD_AIRPORT | CMD_MSG(STR_ERROR_CAN_T_BUILD_AIRPORT_HERE), CcBuildAirport, "" };
-	ShowSelectStationIfNeeded(cmdcont, TileArea(tile, _thd.size.x / TILE_SIZE, _thd.size.y / TILE_SIZE));
+	byte airport_type = AirportClass::Get(_selected_airport_class)->GetSpec(_selected_airport_index)->GetIndex();
+	byte layout = _selected_airport_layout;
+	bool adjacent = _ctrl_pressed;
+
+	auto proc = [=](bool test, StationID to_join) -> bool {
+		if (test) {
+			return Command<CMD_BUILD_AIRPORT>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_AIRPORT>()), tile, airport_type, layout, INVALID_STATION, adjacent).Succeeded();
+		} else {
+			return Command<CMD_BUILD_AIRPORT>::Post(STR_ERROR_CAN_T_BUILD_AIRPORT_HERE, CcBuildAirport, tile, airport_type, layout, to_join, adjacent);
+		}
+	};
+
+	ShowSelectStationIfNeeded(TileArea(tile, _thd.size.x / TILE_SIZE, _thd.size.y / TILE_SIZE), proc);
 }
 
 /** Airport build toolbar window handler. */
@@ -74,13 +82,12 @@ struct BuildAirToolbarWindow : Window {
 	{
 		this->InitNested(window_number);
 		this->OnInvalidateData();
-		if (_settings_client.gui.link_terraform_toolbar || _settings_client.gui.compact_vertical_toolbar) ShowTerraformToolbar(this);
+		if (_settings_client.gui.link_terraform_toolbar) ShowTerraformToolbar(this);
 		this->last_user_action = WIDGET_LIST_END;
 	}
 
 	void Close() override
 	{
-		if (_thd.GetCallbackWnd() == this) this->OnPlaceObjectAbort();
 		if (this->IsWidgetLowered(WID_AT_AIRPORT)) SetViewportCatchmentStation(nullptr, true);
 		if (_settings_client.gui.link_terraform_toolbar) CloseWindowById(WC_SCEN_LAND_GEN, 0, false);
 		this->Window::Close();
@@ -132,10 +139,9 @@ struct BuildAirToolbarWindow : Window {
 	void OnPlaceObject(Point pt, TileIndex tile) override
 	{
 		switch (this->last_user_action) {
-			case WID_AT_AIRPORT: {
-				VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_BUILD_STATION);
+			case WID_AT_AIRPORT:
+				PlaceAirport(tile);
 				break;
-			}
 
 			case WID_AT_DEMOLISH:
 				PlaceProc_DemolishArea(tile);
@@ -143,7 +149,6 @@ struct BuildAirToolbarWindow : Window {
 
 			default: NOT_REACHED();
 		}
-		MoveAllWindowsOffScreen();
 	}
 
 	void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt) override
@@ -153,17 +158,8 @@ struct BuildAirToolbarWindow : Window {
 
 	void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile) override
 	{
-		if (pt.x == -1) return;
-		MoveAllHiddenWindowsBackToScreen();
-		switch (select_proc) {
-			case DDSP_BUILD_STATION:
-				assert(start_tile == end_tile);
-				PlaceAirport(end_tile);
-				break;
-			case DDSP_DEMOLISH_AREA:
-				GUIPlaceProcDragXY(select_proc, start_tile, end_tile);
-				break;
-			default: NOT_REACHED();
+		if (pt.x != -1 && select_proc == DDSP_DEMOLISH_AREA) {
+			GUIPlaceProcDragXY(select_proc, start_tile, end_tile);
 		}
 	}
 
@@ -171,13 +167,10 @@ struct BuildAirToolbarWindow : Window {
 	{
 		if (this->IsWidgetLowered(WID_AT_AIRPORT)) SetViewportCatchmentStation(nullptr, true);
 
-		MoveAllHiddenWindowsBackToScreen();
 		this->RaiseButtons();
-		if (!ConfirmationWindowShown()) {
-			CloseWindowById(WC_BUILD_STATION, TRANSPORT_AIR);
-			CloseWindowById(WC_SELECT_STATION, 0);
-		}
-		ResetObjectToPlace();
+
+		CloseWindowById(WC_BUILD_STATION, TRANSPORT_AIR);
+		CloseWindowById(WC_SELECT_STATION, 0);
 	}
 
 	static HotkeyList hotkeys;
@@ -235,7 +228,7 @@ Window *ShowBuildAirToolbar()
 {
 	if (!Company::IsValidID(_local_company)) return nullptr;
 
-	CloseToolbarLinkedWindows();
+	CloseWindowByClass(WC_BUILD_TOOLBAR);
 	return AllocateWindowDescFront<BuildAirToolbarWindow>(&_air_toolbar_desc, TRANSPORT_AIR);
 }
 
@@ -337,7 +330,6 @@ public:
 				d.width += padding.width;
 				d.height += padding.height;
 				*size = maxdim(*size, d);
-				size->height = GetMinButtonSize(size->height);
 				break;
 			}
 
@@ -349,7 +341,7 @@ public:
 					size->width = std::max(size->width, GetStringBoundingBox(as->name).width);
 				}
 
-				this->line_height = GetMinButtonSize(FONT_HEIGHT_NORMAL + WD_MATRIX_TOP + WD_MATRIX_BOTTOM);
+				this->line_height = FONT_HEIGHT_NORMAL + WD_MATRIX_TOP + WD_MATRIX_BOTTOM;
 				size->height = 5 * this->line_height;
 				break;
 			}
@@ -401,9 +393,7 @@ public:
 					if (!as->IsAvailable()) {
 						GfxFillRect(r.left + 1, y + 1, r.right - 1, y + this->line_height - 2, PC_BLACK, FILLRECT_CHECKER);
 					}
-
-					DrawString(r.left + WD_MATRIX_LEFT, r.right - WD_MATRIX_RIGHT, Center(y, this->line_height), as->name, ((int)i == _selected_airport_index) ? TC_WHITE : TC_BLACK);
-
+					DrawString(r.left + WD_MATRIX_LEFT, r.right - WD_MATRIX_RIGHT, y + WD_MATRIX_TOP, as->name, ((int)i == _selected_airport_index) ? TC_WHITE : TC_BLACK);
 					y += this->line_height;
 				}
 				break;
@@ -590,41 +580,35 @@ static const NWidgetPart _nested_build_airport_widgets[] = {
 		NWidget(WWT_CLOSEBOX, COLOUR_DARK_GREEN),
 		NWidget(WWT_CAPTION, COLOUR_DARK_GREEN), SetDataTip(STR_STATION_BUILD_AIRPORT_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
 	EndContainer(),
-	NWidget(NWID_HORIZONTAL),
-		/* Airport dropdown selector and picture. */
-		NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetFill(1, 0), SetPIP(2, 0, 2),
-			NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetSizingType(NWST_BUTTON), SetDataTip(STR_STATION_BUILD_AIRPORT_CLASS_LABEL, STR_NULL), SetFill(1, 0),
-			NWidget(WWT_DROPDOWN, COLOUR_GREY, WID_AP_CLASS_DROPDOWN), SetFill(1, 0), SetDataTip(STR_BLACK_STRING, STR_STATION_BUILD_AIRPORT_TOOLTIP),
-			NWidget(WWT_EMPTY, COLOUR_DARK_GREEN, WID_AP_AIRPORT_SPRITE), SetFill(1, 0),
+	NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetFill(1, 0), SetPIP(2, 0, 2),
+		NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetDataTip(STR_STATION_BUILD_AIRPORT_CLASS_LABEL, STR_NULL), SetFill(1, 0),
+		NWidget(WWT_DROPDOWN, COLOUR_GREY, WID_AP_CLASS_DROPDOWN), SetFill(1, 0), SetDataTip(STR_BLACK_STRING, STR_STATION_BUILD_AIRPORT_TOOLTIP),
+		NWidget(WWT_EMPTY, COLOUR_DARK_GREEN, WID_AP_AIRPORT_SPRITE), SetFill(1, 0),
+		NWidget(NWID_HORIZONTAL),
+			NWidget(WWT_MATRIX, COLOUR_GREY, WID_AP_AIRPORT_LIST), SetFill(1, 0), SetMatrixDataTip(1, 5, STR_STATION_BUILD_AIRPORT_TOOLTIP), SetScrollbar(WID_AP_SCROLLBAR),
+			NWidget(NWID_VSCROLLBAR, COLOUR_GREY, WID_AP_SCROLLBAR),
 		EndContainer(),
-		/* Airport parameters and info. */
-		NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetFill(1, 0), SetPIP(2, 0, 2),
-			NWidget(NWID_HORIZONTAL),
-				NWidget(WWT_MATRIX, COLOUR_GREY, WID_AP_AIRPORT_LIST), SetFill(1, 0), SetMatrixDataTip(1, 5, STR_STATION_BUILD_AIRPORT_TOOLTIP), SetScrollbar(WID_AP_SCROLLBAR),
-				NWidget(NWID_VSCROLLBAR, COLOUR_GREY, WID_AP_SCROLLBAR),
-			EndContainer(),
-			NWidget(NWID_HORIZONTAL),
-				NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_AP_LAYOUT_DECREASE), SetSizingType(NWST_BUTTON), SetMinimalSize(12, 0), SetDataTip(AWV_DECREASE, STR_NULL),
-				NWidget(WWT_LABEL, COLOUR_GREY, WID_AP_LAYOUT_NUM), SetResize(1, 0), SetFill(1, 0), SetDataTip(STR_BLACK_STRING, STR_NULL),
-				NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_AP_LAYOUT_INCREASE), SetSizingType(NWST_BUTTON), SetMinimalSize(12, 0), SetDataTip(AWV_INCREASE, STR_NULL),
-			EndContainer(),
-			NWidget(WWT_EMPTY, COLOUR_DARK_GREEN, WID_AP_EXTRA_TEXT), SetFill(1, 0), SetMinimalSize(150, 0),
+		NWidget(NWID_HORIZONTAL),
+			NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_AP_LAYOUT_DECREASE), SetMinimalSize(12, 0), SetDataTip(AWV_DECREASE, STR_NULL),
+			NWidget(WWT_LABEL, COLOUR_GREY, WID_AP_LAYOUT_NUM), SetResize(1, 0), SetFill(1, 0), SetDataTip(STR_BLACK_STRING, STR_NULL),
+			NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_AP_LAYOUT_INCREASE), SetMinimalSize(12, 0), SetDataTip(AWV_INCREASE, STR_NULL),
 		EndContainer(),
-		/* Bottom panel. */
-		NWidget(WWT_PANEL, COLOUR_DARK_GREEN, WID_AP_BOTTOMPANEL), SetPIP(2, 2, 2),
-			NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetDataTip(STR_STATION_BUILD_COVERAGE_AREA_TITLE, STR_NULL), SetFill(1, 0),
-			NWidget(NWID_HORIZONTAL),
-				NWidget(NWID_SPACER), SetMinimalSize(14, 0), SetFill(1, 0),
-				NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
-					NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_AP_BTN_DONTHILIGHT), SetMinimalSize(60, 12), SetFill(1, 0),
-												SetDataTip(STR_STATION_BUILD_COVERAGE_OFF, STR_STATION_BUILD_COVERAGE_AREA_OFF_TOOLTIP),
-					NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_AP_BTN_DOHILIGHT), SetMinimalSize(60, 12), SetFill(1, 0),
-												SetDataTip(STR_STATION_BUILD_COVERAGE_ON, STR_STATION_BUILD_COVERAGE_AREA_ON_TOOLTIP),
-				EndContainer(),
-				NWidget(NWID_SPACER), SetMinimalSize(14, 0), SetFill(1, 0),
+		NWidget(WWT_EMPTY, COLOUR_DARK_GREEN, WID_AP_EXTRA_TEXT), SetFill(1, 0), SetMinimalSize(150, 0),
+	EndContainer(),
+	/* Bottom panel. */
+	NWidget(WWT_PANEL, COLOUR_DARK_GREEN, WID_AP_BOTTOMPANEL), SetPIP(2, 2, 2),
+		NWidget(WWT_LABEL, COLOUR_DARK_GREEN), SetDataTip(STR_STATION_BUILD_COVERAGE_AREA_TITLE, STR_NULL), SetFill(1, 0),
+		NWidget(NWID_HORIZONTAL),
+			NWidget(NWID_SPACER), SetMinimalSize(14, 0), SetFill(1, 0),
+			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
+				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_AP_BTN_DONTHILIGHT), SetMinimalSize(60, 12), SetFill(1, 0),
+											SetDataTip(STR_STATION_BUILD_COVERAGE_OFF, STR_STATION_BUILD_COVERAGE_AREA_OFF_TOOLTIP),
+				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_AP_BTN_DOHILIGHT), SetMinimalSize(60, 12), SetFill(1, 0),
+											SetDataTip(STR_STATION_BUILD_COVERAGE_ON, STR_STATION_BUILD_COVERAGE_AREA_ON_TOOLTIP),
 			EndContainer(),
-			NWidget(NWID_SPACER), SetMinimalSize(0, 10), SetResize(0, 1), SetFill(1, 0),
+			NWidget(NWID_SPACER), SetMinimalSize(14, 0), SetFill(1, 0),
 		EndContainer(),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 10), SetResize(0, 1), SetFill(1, 0),
 	EndContainer(),
 };
 

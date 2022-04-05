@@ -26,6 +26,9 @@
 #include "vehiclelist.h"
 #include "order_backup.h"
 #include "zoom_func.h"
+#include "depot_cmd.h"
+#include "train_cmd.h"
+#include "vehicle_cmd.h"
 
 #include "widgets/depot_widget.h"
 
@@ -64,8 +67,8 @@ static const NWidgetPart _nested_train_depot_widgets[] = {
 			NWidget(NWID_SELECTION, INVALID_COLOUR, WID_D_SHOW_SELL_CHAIN),
 				NWidget(WWT_IMGBTN, COLOUR_GREY, WID_D_SELL_CHAIN), SetDataTip(SPR_SELL_CHAIN_TRAIN, STR_DEPOT_DRAG_WHOLE_TRAIN_TO_SELL_TOOLTIP), SetResize(0, 1), SetFill(0, 1),
 			EndContainer(),
-			NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_D_SELL_ALL), SetResize(0, 1), SetFill(0, 1), SetDataTip(0x0, STR_NULL),
-			NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_D_AUTOREPLACE), SetResize(0, 1), SetFill(0, 1), SetDataTip(0x0, STR_NULL),
+			NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_D_SELL_ALL), SetDataTip(0x0, STR_NULL),
+			NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_D_AUTOREPLACE), SetDataTip(0x0, STR_NULL),
 		EndContainer(),
 		NWidget(NWID_VSCROLLBAR, COLOUR_GREY, WID_D_V_SCROLL),
 	EndContainer(),
@@ -111,17 +114,15 @@ extern void DepotSortList(VehicleList *list);
 
 /**
  * This is the Callback method after the cloning attempt of a vehicle
- * @param result the result of the cloning command
- * @param tile unused
- * @param p1 unused
- * @param p2 unused
  * @param cmd unused
+ * @param result the result of the cloning command
+ * @param veh_id cloned vehicle ID
  */
-void CcCloneVehicle(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcCloneVehicle(Commands cmd, const CommandCost &result, VehicleID veh_id)
 {
 	if (result.Failed()) return;
 
-	const Vehicle *v = Vehicle::Get(_new_vehicle_id);
+	const Vehicle *v = Vehicle::Get(veh_id);
 
 	ShowVehicleViewWindow(v);
 }
@@ -141,7 +142,7 @@ static void TrainDepotMoveVehicle(const Vehicle *wagon, VehicleID sel, const Veh
 
 	if (wagon == v) return;
 
-	DoCommandP(v->tile, v->index | (_ctrl_pressed ? 1 : 0) << 20, wagon == nullptr ? INVALID_VEHICLE : wagon->index, CMD_MOVE_RAIL_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_MOVE_VEHICLE));
+	Command<CMD_MOVE_RAIL_VEHICLE>::Post(STR_ERROR_CAN_T_MOVE_VEHICLE, v->tile, v->index, wagon == nullptr ? INVALID_VEHICLE : wagon->index, _ctrl_pressed);
 }
 
 static VehicleCellSize _base_block_sizes_depot[VEH_COMPANY_END];    ///< Cell size for vehicle images in the depot view.
@@ -330,7 +331,7 @@ struct DepotWindow : Window {
 				/* Length of consist in tiles with 1 fractional digit (rounded up) */
 				SetDParam(0, CeilDiv(u->gcache.cached_total_length * 10, TILE_SIZE));
 				SetDParam(1, 1);
-				DrawString(rtl ? left + WD_FRAMERECT_LEFT : right - this->count_width, rtl ? left + this->count_width : right - WD_FRAMERECT_RIGHT, Center(y, this->resize.step_height, FONT_HEIGHT_SMALL), STR_TINY_BLACK_DECIMAL, TC_FROMSTRING, SA_RIGHT); // Draw the counter
+				DrawString(rtl ? left + WD_FRAMERECT_LEFT : right - this->count_width, rtl ? left + this->count_width : right - WD_FRAMERECT_RIGHT, y + (this->resize.step_height - FONT_HEIGHT_SMALL) / 2, STR_TINY_BLACK_DECIMAL, TC_FROMSTRING, SA_RIGHT); // Draw the counter
 				break;
 			}
 
@@ -340,28 +341,26 @@ struct DepotWindow : Window {
 			default: NOT_REACHED();
 		}
 
-		uint diff_x, y_sprite, y_num;
+		uint diff_x, diff_y;
 		if (v->IsGroundVehicle()) {
 			/* Arrange unitnumber and flag horizontally */
 			diff_x = this->flag_width + WD_FRAMERECT_LEFT;
-			y_sprite = Center(y, this->resize.step_height, this->flag_height);
-			y_num = Center(y, this->resize.step_height);
+			diff_y = (this->resize.step_height - this->flag_height) / 2 - 2;
 		} else {
 			/* Arrange unitnumber and flag vertically */
 			diff_x = WD_FRAMERECT_LEFT;
-			y_num = Center(y, this->resize.step_height, FONT_HEIGHT_NORMAL + this->flag_height + 2);
-			y_sprite = y_num + FONT_HEIGHT_NORMAL;
+			diff_y = FONT_HEIGHT_NORMAL + WD_PAR_VSEP_NORMAL;
 		}
 		int text_left  = rtl ? right - this->header_width - 1 : left + diff_x;
 		int text_right = rtl ? right - diff_x : left + this->header_width - 1;
 
 		if (free_wagon) {
-			DrawString(text_left, text_right, Center(y, this->resize.step_height), STR_DEPOT_NO_ENGINE);
+			DrawString(text_left, text_right, y + 2, STR_DEPOT_NO_ENGINE);
 		} else {
-			DrawSprite((v->vehstatus & VS_STOPPED) ? SPR_FLAG_VEH_STOPPED : SPR_FLAG_VEH_RUNNING, PAL_NONE, rtl ? right - this->flag_width : left + WD_FRAMERECT_LEFT, y_sprite);
+			DrawSprite((v->vehstatus & VS_STOPPED) ? SPR_FLAG_VEH_STOPPED : SPR_FLAG_VEH_RUNNING, PAL_NONE, rtl ? right - this->flag_width : left + WD_FRAMERECT_LEFT, y + diff_y);
 
 			SetDParam(0, v->unitnumber);
-			DrawString(text_left, text_right, y_num, (uint16)(v->max_age - DAYS_IN_LEAP_YEAR) >= v->age ? STR_BLACK_COMMA : STR_RED_COMMA);
+			DrawString(text_left, text_right, y + 2, (uint16)(v->max_age - DAYS_IN_LEAP_YEAR) >= v->age ? STR_BLACK_COMMA : STR_RED_COMMA);
 		}
 	}
 
@@ -679,7 +678,6 @@ struct DepotWindow : Window {
 				int base_width = this->count_width + this->header_width;
 
 				resize->height = std::max<uint>(GetVehicleImageCellSize(this->type, EIT_IN_DEPOT).height, min_height);
-				resize->height = GetMinButtonSize(resize->height);
 				if (this->type == VEH_TRAIN) {
 					resize->width = 1;
 					size->width = base_width + 2 * ScaleGUITrad(29); // about 2 parts
@@ -805,7 +803,7 @@ struct DepotWindow : Window {
 			case WID_D_STOP_ALL:
 			case WID_D_START_ALL: {
 				VehicleListIdentifier vli(VL_DEPOT_LIST, this->type, this->owner);
-				DoCommandP(this->window_number, (widget == WID_D_START_ALL ? (1 << 0) : 0), vli.Pack(), CMD_MASS_START_STOP);
+				Command<CMD_MASS_START_STOP>::Post(this->window_number, widget == WID_D_START_ALL, false, vli);
 				break;
 			}
 
@@ -828,7 +826,7 @@ struct DepotWindow : Window {
 				break;
 
 			case WID_D_AUTOREPLACE:
-				DoCommandP(this->window_number, this->type, 0, CMD_DEPOT_MASS_AUTOREPLACE);
+				Command<CMD_DEPOT_MASS_AUTOREPLACE>::Post(this->window_number, this->type);
 				break;
 
 		}
@@ -839,7 +837,7 @@ struct DepotWindow : Window {
 		if (str == nullptr) return;
 
 		/* Do depot renaming */
-		DoCommandP(0, this->GetDepotIndex(), 0, CMD_RENAME_DEPOT | CMD_MSG(STR_ERROR_CAN_T_RENAME_DEPOT), nullptr, str);
+		Command<CMD_RENAME_DEPOT>::Post(STR_ERROR_CAN_T_RENAME_DEPOT, this->GetDepotIndex(), str);
 	}
 
 	bool OnRightClick(Point pt, int widget) override
@@ -907,10 +905,10 @@ struct DepotWindow : Window {
 	{
 		if (_ctrl_pressed) {
 			/* Share-clone, do not open new viewport, and keep tool active */
-			DoCommandP(this->window_number, v->index, 1, CMD_CLONE_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_BUY_TRAIN + v->type), nullptr);
+			Command<CMD_CLONE_VEHICLE>::Post(STR_ERROR_CAN_T_BUY_TRAIN + v->type, this->window_number, v->index, true);
 		} else {
-			/* Copy-clone, open viewport for new vehicle, and deselect the tool (assume player wants to changs things on new vehicle) */
-			if (DoCommandP(this->window_number, v->index, 0, CMD_CLONE_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_BUY_TRAIN + v->type), CcCloneVehicle)) {
+			/* Copy-clone, open viewport for new vehicle, and deselect the tool (assume player wants to change things on new vehicle) */
+			if (Command<CMD_CLONE_VEHICLE>::Post(STR_ERROR_CAN_T_BUY_TRAIN + v->type, CcCloneVehicle, this->window_number, v->index, false)) {
 				ResetObjectToPlace();
 			}
 		}
@@ -1004,8 +1002,7 @@ struct DepotWindow : Window {
 
 					if (this->GetVehicleFromDepotWndPt(pt.x - nwi->pos_x, pt.y - nwi->pos_y, &v, &gdvp) == MODE_DRAG_VEHICLE && sel != INVALID_VEHICLE) {
 						if (gdvp.wagon != nullptr && gdvp.wagon->index == sel && _ctrl_pressed) {
-							DoCommandP(Vehicle::Get(sel)->tile, Vehicle::Get(sel)->index, true,
-									CMD_REVERSE_TRAIN_DIRECTION | CMD_MSG(STR_ERROR_CAN_T_REVERSE_DIRECTION_RAIL_VEHICLE));
+							Command<CMD_REVERSE_TRAIN_DIRECTION>::Post(STR_ERROR_CAN_T_REVERSE_DIRECTION_RAIL_VEHICLE, Vehicle::Get(sel)->tile, Vehicle::Get(sel)->index, true);
 						} else if (gdvp.wagon == nullptr || gdvp.wagon->index != sel) {
 							this->vehicle_over = INVALID_VEHICLE;
 							TrainDepotMoveVehicle(gdvp.wagon, sel, gdvp.head);
@@ -1029,8 +1026,8 @@ struct DepotWindow : Window {
 				this->sel = INVALID_VEHICLE;
 				this->SetDirty();
 
-				int sell_cmd = (v->type == VEH_TRAIN && (widget == WID_D_SELL_CHAIN || _ctrl_pressed)) ? 1 : 0;
-				DoCommandP(v->tile, v->index | sell_cmd << 20 | MAKE_ORDER_BACKUP_FLAG, 0, GetCmdSellVeh(v->type));
+				bool sell_cmd = (v->type == VEH_TRAIN && (widget == WID_D_SELL_CHAIN || _ctrl_pressed));
+				Command<CMD_SELL_VEHICLE>::Post(GetCmdSellVehMsg(v->type), v->tile, v->index, sell_cmd, true, INVALID_CLIENT_ID);
 				break;
 			}
 
@@ -1093,8 +1090,8 @@ static void DepotSellAllConfirmationCallback(Window *win, bool confirmed)
 	if (confirmed) {
 		DepotWindow *w = (DepotWindow*)win;
 		TileIndex tile = w->window_number;
-		byte vehtype = w->type;
-		DoCommandP(tile, vehtype, 0, CMD_DEPOT_SELL_ALL_VEHICLES);
+		VehicleType vehtype = w->type;
+		Command<CMD_DEPOT_SELL_ALL_VEHICLES>::Post(tile, vehtype);
 	}
 }
 

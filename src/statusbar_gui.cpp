@@ -25,7 +25,6 @@
 #include "toolbar_gui.h"
 #include "core/geometry_func.hpp"
 #include "guitimer_func.h"
-#include "settings_gui.h"
 #include "zoom_func.h"
 
 #include "widgets/statusbar_widget.h"
@@ -71,7 +70,7 @@ static bool DrawScrollingStatusText(const NewsItem *ni, int scroll_pos, int left
 
 	DrawPixelInfo *old_dpi = _cur_dpi;
 	_cur_dpi = &tmp_dpi;
-	DrawString(pos, INT16_MAX, Center(0, bottom - top), buffer, TC_LIGHT_BLUE, SA_LEFT | SA_FORCE);
+	DrawString(pos, INT16_MAX, 0, buffer, TC_LIGHT_BLUE, SA_LEFT | SA_FORCE);
 	_cur_dpi = old_dpi;
 
 	return (_current_text_dir == TD_RTL) ? (pos < right - left) : (pos + width > 0);
@@ -107,35 +106,25 @@ struct StatusBarWindow : Window {
 
 	void FindWindowPlacementAndResize(int def_width, int def_height) override
 	{
-		Window::FindWindowPlacementAndResize(std::min(_toolbar_width, _screen.width * 2 / 3 - GetMinButtonSize() * 2), def_height);
+		Window::FindWindowPlacementAndResize(_toolbar_width, def_height);
 	}
 
 	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		Dimension d;
 		switch (widget) {
-			/* Left and right should have same sizing. */
 			case WID_S_LEFT:
-			case WID_S_RIGHT: {
 				SetDParamMaxValue(0, MAX_YEAR * DAYS_IN_YEAR);
 				d = GetStringBoundingBox(STR_WHITE_DATE_LONG);
+				break;
 
+			case WID_S_RIGHT: {
 				int64 max_money = UINT32_MAX;
 				for (const Company *c : Company::Iterate()) max_money = std::max<int64>(c->money, max_money);
 				SetDParam(0, 100LL * max_money);
-				d = maxdim(d, GetStringBoundingBox(STR_COMPANY_MONEY));
+				d = GetStringBoundingBox(STR_COMPANY_MONEY);
 				break;
 			}
-
-			case WID_S_MIDDLE:
-				d = GetStringBoundingBox(STR_STATUSBAR_AUTOSAVE);
-				d = maxdim(d, GetStringBoundingBox(STR_STATUSBAR_PAUSED));
-
-				if (Company::IsValidID(_local_company)) {
-					SetDParam(0, _local_company);
-					d = maxdim(d, GetStringBoundingBox(STR_STATUSBAR_COMPANY_NAME));
-				}
-				break;
 
 			default:
 				return;

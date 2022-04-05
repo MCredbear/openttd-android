@@ -327,6 +327,8 @@ STR_GROUP_BY_NONE                                               :Hiçbiri
 STR_GROUP_BY_SHARED_ORDERS                                      :Paylaşılan talimatlar
 
 # Order button in shared orders vehicle list
+STR_GOTO_ORDER_VIEW                                             :{BLACK}Talimatlar
+STR_GOTO_ORDER_VIEW_TOOLTIP                                     :{BLACK}Emir görünümünü aç
 
 # Tooltips for the main toolbar
 ###length 31
@@ -1150,10 +1152,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alp Meraklısı
 STR_TERRAIN_TYPE_CUSTOM                                         :Özel yükseklik
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Özel yükseklik ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :İzne tabi
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Töleranslı
 STR_CITY_APPROVAL_HOSTILE                                       :Düşman
+STR_CITY_APPROVAL_PERMISSIVE                                    :İzne tabi
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Uygun YZ'ler yok...{}'Çevrimiçi içerik' sistemiyle pek çok YZ indirebilirsiniz
 
@@ -1742,6 +1744,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Rakibe ait yeni
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Kazalar / felaketler: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Kazalar veya felaketler meydana geldiğinde gazete haberi olarak göster
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Rakip araçların yaptığı kazalar: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Rakiplerin kaza yapan araçlar hakkında bir gazete haberi göster
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Şirket bilgisi: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Yeni bir şirket oyuna başladığında veya şirketler iflas etme riski taşıdığında gazete haberi olarak göster
 
@@ -1818,12 +1823,16 @@ STR_CONFIG_SETTING_SEMAPHORE_BUILD_BEFORE_DATE                  :Bu tarihten ön
 STR_CONFIG_SETTING_SEMAPHORE_BUILD_BEFORE_DATE_HELPTEXT         :Raylar için elektrikli sinyallerin kullanılmaya başlanacağı yılı belirler. Bu tarihe kadar elektriksiz sinyaller kullanılır (bunlar da aynı işi görür, sadece görünüşleri farklıdır)
 
 STR_CONFIG_SETTING_CYCLE_SIGNAL_TYPES                           :Sinyal türleri arasında dön: {STRING}
-STR_CONFIG_SETTING_CYCLE_SIGNAL_TYPES_HELPTEXT                  :Ctrl+Tıklama ile sinyal inşa ederken hangi sinyal türlerinin kullanılacağını seç
+STR_CONFIG_SETTING_CYCLE_SIGNAL_TYPES_HELPTEXT                  :Sinyal aracı ile inşa edilmiş bir sinyalin üzerine CTRL+tıklarken hangi sinyal türlerinin kullanılacağını seç
 ###length 2
 STR_CONFIG_SETTING_CYCLE_SIGNAL_PBS                             :Yalnızca yol sinyalleri
-STR_CONFIG_SETTING_CYCLE_SIGNAL_ALL                             :Hepsi
+STR_CONFIG_SETTING_CYCLE_SIGNAL_ALL                             :Hepsi görünür
 
+STR_CONFIG_SETTING_SIGNAL_GUI_MODE                              :Sinyal türlerini göster: {STRING}
+STR_CONFIG_SETTING_SIGNAL_GUI_MODE_HELPTEXT                     :Sinyal araç çubuğunda hangi sinyal türlerinin gösterileceğini seç
 ###length 2
+STR_CONFIG_SETTING_SIGNAL_GUI_MODE_PATH                         :Yalnızca yol sinyalleri
+STR_CONFIG_SETTING_SIGNAL_GUI_MODE_ALL_CYCLE_PATH               :Tüm sinyaller
 
 STR_CONFIG_SETTING_TOWN_LAYOUT                                  :Yeni kasabalar için yol yerleşimi: {STRING}
 STR_CONFIG_SETTING_TOWN_LAYOUT_HELPTEXT                         :Şehirlerin karayolu ağlarını gösteren şema
@@ -2098,7 +2107,7 @@ STR_QUIT_NO                                                     :{BLACK}Hayır
 
 # Abandon game
 STR_ABANDON_GAME_CAPTION                                        :{WHITE}Ana Menüye Dön
-STR_ABANDON_GAME_QUERY                                          :{YELLOW}Oyunu bitirmek istediğinizden emin misiniz?
+STR_ABANDON_GAME_QUERY                                          :{YELLOW}Oyunu bitirmek istediğinize emin misiniz?
 STR_ABANDON_SCENARIO_QUERY                                      :{YELLOW}Bu senaryodan çıkmak istediğinizden emin misiniz?
 
 # Cheat window
@@ -2252,6 +2261,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Yer yü
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Harita boyutu: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Sunucu sürümü: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Sunucu adresi: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Davet kodu: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Başlama tarihi: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Şimdiki tarih: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Oyun Betiği: {WHITE}{STRING} (v{NUM})
@@ -2322,6 +2332,7 @@ STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Şirket 
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Aktif oyuncular
+STR_NETWORK_COMPANY_LIST_SPECTATE                               :Seyret
 
 # Network client list
 STR_NETWORK_CLIENT_LIST_CAPTION                                 :{WHITE}Çok Oyunculu{WHITE}Çevrim İçi Oyuncular
@@ -2406,6 +2417,7 @@ STR_NETWORK_CHAT_TO_COMPANY                                     :[Takım] -> {ST
 STR_NETWORK_CHAT_CLIENT                                         :[Özel] {STRING}: {WHITE}{STRING}
 STR_NETWORK_CHAT_TO_CLIENT                                      :[Özel] -> {STRING}: {WHITE}{STRING}
 STR_NETWORK_CHAT_ALL                                            :[Herkes] {STRING}: {WHITE}{STRING}
+STR_NETWORK_CHAT_EXTERNAL                                       :[{3:STRING}] {0:STRING}: {WHITE}{1:STRING}
 STR_NETWORK_CHAT_OSKTITLE                                       :{BLACK}Ağ sohbeti için yazı girin
 
 # Network messages
@@ -2650,7 +2662,7 @@ STR_WAYPOINT_GRAPHICS_TOOLTIP                                   :{BLACK}Yerimi t
 # Rail station construction window
 STR_STATION_BUILD_RAIL_CAPTION                                  :{WHITE}Tren istasyonu Seçimi
 STR_STATION_BUILD_ORIENTATION                                   :{BLACK}Yön
-STR_STATION_BUILD_RAILROAD_ORIENTATION_TOOLTIP                  :{BLACK}Tren istasyonu yönünü seç
+STR_STATION_BUILD_RAILROAD_ORIENTATION_TOOLTIP                  :{BLACK}Tren istasyonunun yönünü seç
 STR_STATION_BUILD_NUMBER_OF_TRACKS                              :{BLACK}Ray sayısı
 STR_STATION_BUILD_NUMBER_OF_TRACKS_TOOLTIP                      :{BLACK}Tren istasyonu için peron sayısı seç
 STR_STATION_BUILD_PLATFORM_LENGTH                               :{BLACK}Platform uzunluğu
@@ -2666,6 +2678,7 @@ STR_STATION_CLASS_WAYP                                          :Yerimleri
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Sinyal Seçimi
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Gelişmiş sinyal türlerini göster
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Blok Sinyali (semafor){}Bu en temel sinyal türüdür, bir blok içinde aynı anda yalnız bir tren bulunmasına izin verir
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Giriş-Sinyali (semafor){}Yolun devam eden bölümünde en az bir yeşil çıkış sinyali olduğu sürece yeşil yanar. Aksi halde kırmızı yanar
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Çıkış Sinyali (semafor){}Blok sinyali ile aynı şekilde çalışır ancak giriş ve karışık ön sinyaller ile doğru rengi tetiklemek gerekmektedir
@@ -4136,6 +4149,10 @@ STR_VEHICLE_STATUS_HEADING_FOR_WAYPOINT_VEL                     :{LTBLUE}Gidilen
 STR_VEHICLE_STATUS_HEADING_FOR_DEPOT_VEL                        :{ORANGE}{DEPOT} istikametine gidiyor, {VELOCITY}
 STR_VEHICLE_STATUS_HEADING_FOR_DEPOT_SERVICE_VEL                :{LTBLUE}{DEPOT}'nda bakıma gir, {VELOCITY}
 
+STR_VEHICLE_STATUS_CANNOT_REACH_STATION_VEL                     :{LTBLUE}{STATION} istasyonuna ulaşılamıyor, {VELOCITY}
+STR_VEHICLE_STATUS_CANNOT_REACH_WAYPOINT_VEL                    :{LTBLUE}{WAYPOINT} yerimine ulaşılamıyor, {VELOCITY}
+STR_VEHICLE_STATUS_CANNOT_REACH_DEPOT_VEL                       :{ORANGE}{DEPOT} garajına ulaşılamıyor, {VELOCITY}
+STR_VEHICLE_STATUS_CANNOT_REACH_DEPOT_SERVICE_VEL               :{LTBLUE}{DEPOT} garajına ulaşılamıyor, {VELOCITY}
 
 # Vehicle stopped/started animations
 ###length 2
@@ -5550,5 +5567,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

@@ -33,8 +33,7 @@
 #include "guitimer_func.h"
 #include "error.h"
 #include "news_gui.h"
-#include "tutorial_gui.h"
-#include "gui.h"
+#include "misc_cmd.h"
 
 #include "saveload/saveload.h"
 
@@ -78,7 +77,7 @@ bool HandlePlacePushButton(Window *w, int widget, CursorID cursor, HighLightStyl
 }
 
 
-void CcPlaySound_EXPLOSION(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcPlaySound_EXPLOSION(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Succeeded() && _settings_client.sound.confirm) SndPlayTileFx(SND_12_EXPLOSION, tile);
 }
@@ -163,11 +162,11 @@ void FixTitleGameZoom(int zoom_adjust)
 	/* Adjust the zoom in/out.
 	 * Can't simply add, since operator+ is not defined on the ZoomLevel type. */
 	vp->zoom = _gui_zoom;
-	while (zoom_adjust < 0 && vp->zoom != ZOOM_LVL_MIN) {
+	while (zoom_adjust < 0 && vp->zoom != _settings_client.gui.zoom_min) {
 		vp->zoom--;
 		zoom_adjust++;
 	}
-	while (zoom_adjust > 0 && vp->zoom != ZOOM_LVL_MAX) {
+	while (zoom_adjust > 0 && vp->zoom != _settings_client.gui.zoom_max) {
 		vp->zoom++;
 		zoom_adjust--;
 	}
@@ -316,7 +315,7 @@ struct MainWindow : Window
 				break;
 			}
 
-			case GHK_RESET_OBJECT_TO_PLACE: ResetObjectToPlace(); ToolbarSelectLastTool(); break;
+			case GHK_RESET_OBJECT_TO_PLACE: ResetObjectToPlace(); break;
 			case GHK_DELETE_WINDOWS: CloseNonVitalWindows(); break;
 			case GHK_DELETE_NONVITAL_WINDOWS: CloseAllNonVitalWindows(); break;
 			case GHK_DELETE_ALL_MESSAGES: DeleteAllMessages(); break;
@@ -328,7 +327,7 @@ struct MainWindow : Window
 
 			case GHK_MONEY: // Gimme money
 				/* You can only cheat for money in singleplayer mode. */
-				if (!_networking) DoCommandP(0, 10000000, 0, CMD_MONEY_CHEAT);
+				if (!_networking) Command<CMD_MONEY_CHEAT>::Post(10000000);
 				break;
 
 			case GHK_UPDATE_COORDS: // Update the coordinates of all station signs
@@ -446,7 +445,6 @@ struct MainWindow : Window
 		if (!gui_scope) return;
 		/* Forward the message to the appropriate toolbar (ingame or scenario editor) */
 		InvalidateWindowData(WC_MAIN_TOOLBAR, 0, data, true);
-		InvalidateWindowData(WC_MAIN_TOOLBAR_RIGHT, 0, data, true);
 	}
 
 	static HotkeyList hotkeys;
@@ -547,15 +545,6 @@ void SetupColoursAndInitialWindow()
 		default: NOT_REACHED();
 		case GM_MENU:
 			ShowSelectGameWindow();
-			ShowTutorialWindowOnceAfterInstall();
-			if (getenv("SDL_RESTART_PARAMS") != NULL) {
-				static int counter = 5; // This part of code is called several times during startup, which closes all windows, so we need to put random hacks here
-				counter--;
-				ShowGameOptions();
-#ifndef WIN32
-				if (counter == 0) unsetenv("SDL_RESTART_PARAMS");
-#endif
-			}
 			break;
 
 		case GM_NORMAL:

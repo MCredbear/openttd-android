@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -7,21 +5,13 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file build_confirmation_func.h Transparent confirmation dialog for building anything on the map. */
+/** @file airport_cmd.h Command definitions related to airports. */
 
-#ifndef BUILD_CONFIRMATION_FUNC_H
-#define BUILD_CONFIRMATION_FUNC_H
+#ifndef AIRPORT_CMD_H
+#define AIRPORT_CMD_H
 
-#include "stdafx.h"
-#include "window_func.h"
-#include "widget_type.h"
+#include "command_type.h"
 
+CommandCallback CcBuildAirport;
 
-void ShowBuildConfirmationWindow();
-void HideBuildConfirmationWindow();
-bool ConfirmationWindowShown();
-bool BuildConfirmationWindowProcessViewportClick();
-bool ConfirmationWindowEstimatingCost();
-void ConfirmationWindowSetEstimatedCost(Money cost);
-
-#endif /* BUILD_CONFIRMATION_FUNC_H */
+#endif /* AIRPORT_CMD_H */

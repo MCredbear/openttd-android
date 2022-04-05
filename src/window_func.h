@@ -39,7 +39,6 @@ void InvalidateWindowClassesData(WindowClass cls, int data = 0, bool gui_scope =
 void CloseNonVitalWindows();
 void CloseAllNonVitalWindows();
 void DeleteAllMessages();
-void CloseToolbarLinkedWindows();
 void CloseConstructionWindows();
 void HideVitalWindows();
 void ShowVitalWindows();

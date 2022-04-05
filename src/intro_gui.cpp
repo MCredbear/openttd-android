@@ -28,7 +28,6 @@
 #include "rev.h"
 #include "highscore.h"
 #include "signs_base.h"
-#include "tutorial_gui.h"
 #include "viewport_func.h"
 #include "vehicle_base.h"
 #include <regex>
@@ -103,6 +102,8 @@ struct SelectGameWindow : public Window {
 	size_t cur_viewport_command_index;
 	/** Time spent (milliseconds) on current viewport command. */
 	uint cur_viewport_command_time;
+	uint mouse_idle_time;
+	Point mouse_idle_pos;
 
 	/**
 	 * Find and parse all viewport command signs.
@@ -182,6 +183,8 @@ struct SelectGameWindow : public Window {
 
 		this->cur_viewport_command_index = (size_t)-1;
 		this->cur_viewport_command_time = 0;
+		this->mouse_idle_time = 0;
+		this->mouse_idle_pos = _cursor.pos;
 	}
 
 	void OnRealtimeTick(uint delta_ms) override
@@ -189,6 +192,17 @@ struct SelectGameWindow : public Window {
 		/* Move the main game viewport according to intro viewport commands. */
 
 		if (intro_viewport_commands.empty()) return;
+
+		bool suppress_panning = true;
+		if (this->mouse_idle_pos.x != _cursor.pos.x || this->mouse_idle_pos.y != _cursor.pos.y) {
+			this->mouse_idle_pos = _cursor.pos;
+			this->mouse_idle_time = 2000;
+		} else if (this->mouse_idle_time > delta_ms) {
+			this->mouse_idle_time -= delta_ms;
+		} else {
+			this->mouse_idle_time = 0;
+			suppress_panning = false;
+		}
 
 		/* Determine whether to move to the next command or stay at current. */
 		bool changed_command = false;
@@ -212,6 +226,9 @@ struct SelectGameWindow : public Window {
 
 		/* Early exit if the current command hasn't elapsed and isn't animated. */
 		if (!changed_command && !vc.pan_to_next && vc.vehicle == INVALID_VEHICLE) return;
+
+		/* Suppress panning commands, while user interacts with GUIs. */
+		if (!changed_command && suppress_panning) return;
 
 		/* Reset the zoom level. */
 		if (changed_command) FixTitleGameZoom(vc.zoom_adjust);
@@ -256,13 +273,9 @@ struct SelectGameWindow : public Window {
 	void OnInit() override
 	{
 		bool missing_sprites = _missing_extra_graphics > 0 && !IsReleasedVersion();
-		missing_sprites = false;
 		this->GetWidget<NWidgetStacked>(WID_SGI_BASESET_SELECTION)->SetDisplayedPlane(missing_sprites ? 0 : SZSP_NONE);
 
 		bool missing_lang = _current_language->missing >= _settings_client.gui.missing_strings_threshold && !IsReleasedVersion();
-#ifdef __ANDROID__
-		missing_lang = false;
-#endif
 		this->GetWidget<NWidgetStacked>(WID_SGI_TRANSLATION_SELECTION)->SetDisplayedPlane(missing_lang ? 0 : SZSP_NONE);
 	}
 
@@ -355,14 +368,13 @@ struct SelectGameWindow : public Window {
 				}
 				break;
 			case WID_SGI_AI_SETTINGS:     ShowAIConfigWindow(); break;
-			case WID_SGI_TUTORIAL:        ShowTutorialWindow(); break;
 			case WID_SGI_EXIT:            HandleExitGameRequest(); break;
 		}
 	}
 };
 
 static const NWidgetPart _nested_select_game_widgets[] = {
-	NWidget(WWT_CAPTION, COLOUR_BROWN), SetSizingType(NWST_BUTTON), SetDataTip(STR_INTRO_CAPTION, STR_NULL),
+	NWidget(WWT_CAPTION, COLOUR_BROWN), SetDataTip(STR_INTRO_CAPTION, STR_NULL),
 	NWidget(WWT_PANEL, COLOUR_BROWN),
 	NWidget(NWID_SPACER), SetMinimalSize(0, 8),
 
@@ -456,11 +468,11 @@ static const NWidgetPart _nested_select_game_widgets[] = {
 	NWidget(NWID_SPACER), SetMinimalSize(0, 6),
 
 	/* 'exit program' button */
-	NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
-		NWidget(WWT_PUSHTXTBTN, COLOUR_ORANGE, WID_SGI_TUTORIAL), SetMinimalSize(158, 12),
-							SetDataTip(STR_ABOUT_MENU_TUTORIAL, STR_TUTORIAL_WINDOW_TOOLTIP), SetPadding(0, 0, 0, 10), SetFill(1, 0),
-		NWidget(WWT_PUSHTXTBTN, COLOUR_ORANGE, WID_SGI_EXIT), SetMinimalSize(158, 12),
-							SetDataTip(STR_INTRO_QUIT, STR_INTRO_TOOLTIP_QUIT), SetPadding(0, 10, 0, 0), SetFill(1, 0),
+	NWidget(NWID_HORIZONTAL),
+		NWidget(NWID_SPACER), SetFill(1, 0),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_ORANGE, WID_SGI_EXIT), SetMinimalSize(128, 12),
+							SetDataTip(STR_INTRO_QUIT, STR_INTRO_TOOLTIP_QUIT),
+		NWidget(NWID_SPACER), SetFill(1, 0),
 	EndContainer(),
 
 	NWidget(NWID_SPACER), SetMinimalSize(0, 8),

@@ -22,11 +22,11 @@
 #include "sortlist_type.h"
 #include "stringfilter_type.h"
 #include "string_func.h"
-#include "settings_type.h"
 #include "core/geometry_func.hpp"
 #include "hotkeys.h"
 #include "transparency.h"
 #include "gui.h"
+#include "signs_cmd.h"
 
 #include "widgets/sign_widget.h"
 
@@ -268,14 +268,12 @@ struct SignListWindow : Window, SignList {
 				Dimension spr_dim = GetSpriteSize(SPR_COMPANY_ICON);
 				this->text_offset = WD_FRAMETEXT_LEFT + spr_dim.width + 2; // 2 pixels space between icon and the sign text.
 				resize->height = std::max<uint>(FONT_HEIGHT_NORMAL, spr_dim.height + 2);
-				resize->height = std::max(GetMinButtonSize(), resize->height);
 				Dimension d = {(uint)(this->text_offset + WD_FRAMETEXT_RIGHT), WD_FRAMERECT_TOP + 5 * resize->height + WD_FRAMERECT_BOTTOM};
 				*size = maxdim(*size, d);
 				break;
 			}
 
 			case WID_SIL_CAPTION:
-				if (!_settings_client.gui.windows_titlebars) break;
 				SetDParamMaxValue(0, Sign::GetPoolSize(), 3);
 				*size = GetStringBoundingBox(STR_SIGN_LIST_CAPTION);
 				size->height += padding.height;
@@ -416,7 +414,7 @@ Window *ShowSignList()
 static bool RenameSign(SignID index, const char *text)
 {
 	bool remove = StrEmpty(text);
-	DoCommandP(0, index, 0, CMD_RENAME_SIGN | (StrEmpty(text) ? CMD_MSG(STR_ERROR_CAN_T_DELETE_SIGN) : CMD_MSG(STR_ERROR_CAN_T_CHANGE_SIGN_NAME)), nullptr, text);
+	Command<CMD_RENAME_SIGN>::Post(StrEmpty(text) ? STR_ERROR_CAN_T_DELETE_SIGN : STR_ERROR_CAN_T_CHANGE_SIGN_NAME, index, text);
 	return remove;
 }
 
@@ -568,10 +566,14 @@ static WindowDesc _query_sign_edit_desc(
  */
 void HandleClickOnSign(const Sign *si)
 {
+	/* If we can't rename the sign, don't even open the rename GUI. */
+	if (!CompanyCanRenameSign(si)) return;
+
 	if (_ctrl_pressed && (si->owner == _local_company || (si->owner == OWNER_DEITY && _game_mode == GM_EDITOR))) {
 		RenameSign(si->index, "");
 		return;
 	}
+
 	ShowRenameSignWindow(si);
 }
 

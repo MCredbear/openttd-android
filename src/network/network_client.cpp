@@ -18,6 +18,7 @@
 #include "../company_func.h"
 #include "../company_base.h"
 #include "../company_gui.h"
+#include "../company_cmd.h"
 #include "../core/random_func.hpp"
 #include "../date_func.h"
 #include "../gfx_func.h"
@@ -839,7 +840,7 @@ NetworkRecvStatus ClientNetworkGameSocketHandler::Receive_SERVER_MAP_DONE(Packet
 			 * the server will give us a client-id and let us in */
 			_network_join_status = NETWORK_JOIN_STATUS_REGISTERING;
 			ShowJoinStatusWindow();
-			NetworkSendCommand(0, CCA_NEW, 0, CMD_COMPANY_CTRL, nullptr, {}, _local_company);
+			Command<CMD_COMPANY_CTRL>::SendNet(STR_NULL, _local_company, CCA_NEW, INVALID_COMPANY, CRR_NONE, INVALID_CLIENT_ID);
 		}
 	} else {
 		/* take control over an existing company */
@@ -858,7 +859,11 @@ NetworkRecvStatus ClientNetworkGameSocketHandler::Receive_SERVER_FRAME(Packet *p
 #ifdef ENABLE_NETWORK_SYNC_EVERY_FRAME
 	/* Test if the server supports this option
 	 *  and if we are at the frame the server is */
-	if (p->pos + 1 < p->size) {
+#ifdef NETWORK_SEND_DOUBLE_SEED
+	if (p->CanReadFromPacket(sizeof(uint32) + sizeof(uint32))) {
+#else
+	if (p->CanReadFromPacket(sizeof(uint32))) {
+#endif
 		_sync_frame = _frame_counter_server;
 		_sync_seed_1 = p->Recv_uint32();
 #ifdef NETWORK_SEND_DOUBLE_SEED
@@ -1051,9 +1056,9 @@ NetworkRecvStatus ClientNetworkGameSocketHandler::Receive_SERVER_NEWGAME(Packet 
 	 * care about the server shutting down. */
 	if (this->status >= STATUS_JOIN) {
 		/* To throttle the reconnects a bit, every clients waits its
-		 * Client ID modulo 16. This way reconnects should be spread
-		 * out a bit. */
-		_network_reconnect = _network_own_client_id % 16;
+		 * Client ID modulo 16 + 1 (value 0 means no reconnect).
+		 * This way reconnects should be spread out a bit. */
+		_network_reconnect = _network_own_client_id % 16 + 1;
 		ShowErrorMessage(STR_NETWORK_MESSAGE_SERVER_REBOOT, INVALID_STRING_ID, WL_CRITICAL);
 	}
 

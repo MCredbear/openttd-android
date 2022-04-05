@@ -262,15 +262,6 @@ static void ZoomMinMaxChanged(int32 new_value)
 	}
 }
 
-static void VerticalToolbarChanged(int32 p1)
-{
-	if (FindWindowByClass(WC_MAIN_TOOLBAR)) {
-		HideVitalWindows();
-		ShowVitalWindows();
-		ReInitAllWindows(false);
-	}
-}
-
 static void SpriteZoomMinChanged(int32 new_value)
 {
 	GfxClearSpriteCache();

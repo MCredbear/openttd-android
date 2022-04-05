@@ -103,7 +103,6 @@ enum ViewportPlaceMethod {
 	VPM_FIX_VERTICAL    =    6, ///< drag only in vertical direction
 	VPM_X_LIMITED       =    7, ///< Drag only in X axis with limited size
 	VPM_Y_LIMITED       =    8, ///< Drag only in Y axis with limited size
-	VPM_SINGLE_TILE     =    9, ///< Drag around the screen, selecting only the end tile
 	VPM_RAILDIRS        = 0x40, ///< all rail directions
 	VPM_SIGNALDIRS      = 0x80, ///< similar to VMP_RAILDIRS, but with different cursor
 };
@@ -141,16 +140,13 @@ enum ViewportDragDropSelectionProcess {
 	DDSP_REMOVE_BUSSTOP,       ///< Road stop removal (buses)
 	DDSP_REMOVE_TRUCKSTOP,     ///< Road stop removal (trucks)
 	DDSP_CONVERT_ROAD,         ///< Road conversion
-
-	/* Single tile dragging */
-	DDSP_SINGLE_TILE,          ///< Single tile actions (build industry, town, etc.)
 };
 
 
 /**
  * Target of the viewport scrolling GS method
  */
-enum ViewportScrollTarget {
+enum ViewportScrollTarget : byte {
 	VST_EVERYONE, ///< All players
 	VST_COMPANY,  ///< All players in specific company
 	VST_CLIENT,   ///< Single player

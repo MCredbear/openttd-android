@@ -828,7 +828,7 @@ STR_NEWS_DISASTER_COAL_MINE_SUBSIDENCE                          :{BIG_FONT}{BLAC
 STR_NEWS_DISASTER_FLOOD_VEHICLE                                 :{BIG_FONT}{BLACK}홍수 발생!{}최소 {COMMA}명의 실종자가 발생하였으며, 범람 후에 사상자도 발생할 것입니다!
 
 STR_NEWS_COMPANY_IN_TROUBLE_TITLE                               :{BIG_FONT}{BLACK}운송회사에 문제가 생김!
-STR_NEWS_COMPANY_IN_TROUBLE_DESCRIPTION                         :{BIG_FONT}{BLACK}성취도를 바로 올리지 못하면 {STRING}{G 0 "은" "는"} 팔리거나 파산할 것입니다!
+STR_NEWS_COMPANY_IN_TROUBLE_DESCRIPTION                         :{BIG_FONT}{BLACK}{STRING} - 성취도를 바로 올리지 못하면 회사가 팔리거나 파산할 것입니다!
 STR_NEWS_COMPANY_MERGER_TITLE                                   :{BIG_FONT}{BLACK}운송 회사 합병!
 STR_NEWS_COMPANY_MERGER_DESCRIPTION                             :{BIG_FONT}{BLACK}{STRING} 회사가 {STRING} 회사에게 {CURRENCY_LONG}의 가격으로 인수합병되었습니다!
 STR_NEWS_COMPANY_BANKRUPT_TITLE                                 :{BIG_FONT}{BLACK}파산!
@@ -1152,10 +1152,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :매우 험한 �
 STR_TERRAIN_TYPE_CUSTOM                                         :사용자 지정 높이
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :사용자 지정 높이 ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :신경 안씀
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :신경 씀
 STR_CITY_APPROVAL_HOSTILE                                       :싫어함
+STR_CITY_APPROVAL_PERMISSIVE                                    :신경 안씀
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}사용할 수 있는 인공지능이 없습니다...{}'온라인 콘텐츠' 시스템을 통해 인공지능을 다운로드받을 수 있습니다.
 
@@ -1376,7 +1376,7 @@ STR_CONFIG_SETTING_FREIGHT_TRAINS                               :화물 무게�
 STR_CONFIG_SETTING_FREIGHT_TRAINS_HELPTEXT                      :열차가 싣고 있는 화물이 열차 속력에 미치는 영향에 대해 설정합니다. 값을 높게 설정하면 화물을 수송하는데 더 큰 힘이 필요합니다. (특히 언덕을 오를 때 심해집니다)
 
 STR_CONFIG_SETTING_PLANE_SPEED                                  :항공기 속력 조절: {STRING}
-STR_CONFIG_SETTING_PLANE_SPEED_HELPTEXT                         :항공 수송에 대한 수입을 제한하기 위해, 다른 운송 수단의 속력을 1로 보았을 때의 항공기의 속력 비율을 설정합니다.
+STR_CONFIG_SETTING_PLANE_SPEED_HELPTEXT                         :항공 수송에 대한 수입을 제한하기 위해, 다른 운송 수단의 속력을 1로 보았을 때 항공기의 상대 속력을 설정합니다.
 STR_CONFIG_SETTING_PLANE_SPEED_VALUE                            :(실제 속력) x {COMMA}분의 1
 
 STR_CONFIG_SETTING_PLANE_CRASHES                                :항공기 추락 빈도수: {STRING}
@@ -1736,49 +1736,52 @@ STR_CONFIG_SETTING_DISABLE_ELRAILS                              :전기 철도�
 STR_CONFIG_SETTING_DISABLE_ELRAILS_HELPTEXT                     :이 설정을 켜면, 전기 기관차가 일반 철도에서도 달릴 수 있도록 만듭니다.
 
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN               :내 회사의 첫 차량 도착: {STRING}
-STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN_HELPTEXT      :나의 새 역사에 처음으로 차량이 도착하면 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN_HELPTEXT      :나의 새 역사에 처음으로 차량이 도착하면 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER             :경쟁사의 첫 차량 도착: {STRING}
-STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :경쟁자의 새 역사에 처음으로 차량이 도착하면 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :경쟁자의 새 역사에 처음으로 차량이 도착하면 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :사고 / 재앙: {STRING}
-STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :사고나 재앙이 일어났을 때 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :사고나 재앙이 일어났을 때 메시지로 알려줍니다
+
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :경쟁사의 차량 사고: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :경쟁사의 차량이 사고가 나면 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :회사 정보: {STRING}
-STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :새로운 회사가 열리거나, 파산 위기에 처했을 때 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :새로운 회사가 열리거나, 파산 위기에 처했을 때 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN                           :산업시설 건설: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN_HELPTEXT                  :새로운 산업시설이 건설되면 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN_HELPTEXT                  :새로운 산업시설이 건설되면 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE                          :산업시설 폐쇄: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_HELPTEXT                 :산업시설이 폐쇄될 때 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_HELPTEXT                 :산업시설이 폐쇄될 때 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES                         :경제 변화: {STRING}
-STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES_HELPTEXT                :거시적인 경제에 변화가 생기면 뉴스 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES_HELPTEXT                :경제에 거시적인 변화가 생기면 뉴스 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_COMPANY                :내 회사에 의한 산업시설의 생산량 변동: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_COMPANY_HELPTEXT       :내 회사가 수송하는 산업시설의 생산량이 변하면 소식으로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_COMPANY_HELPTEXT       :내 회사가 수송하는 산업시설의 생산량이 변하면 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_OTHER                  :경쟁사에 의한 산업시설의 생산량 변동: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_OTHER_HELPTEXT         :경쟁사가 수송하고 있는 산업시설의 생산량이 변하면 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_OTHER_HELPTEXT         :경쟁사가 수송하고 있는 산업시설의 생산량이 변하면 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_UNSERVED               :기타 산업시설의 생산량 변동: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_UNSERVED_HELPTEXT      :아무도 수송하지 않는 산업시설의 생산량이 변하면 소식으로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_UNSERVED_HELPTEXT      :아무도 수송하지 않는 산업시설의 생산량이 변하면 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_ADVICE                                  :내 회사의 차량에 관한 권고 / 정보: {STRING}
-STR_CONFIG_SETTING_NEWS_ADVICE_HELPTEXT                         :주의를 기울여야하는 차량에 대한 메시지를 표시합니다.
+STR_CONFIG_SETTING_NEWS_ADVICE_HELPTEXT                         :주의를 기울여야하는 차량을 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_NEW_VEHICLES                            :새 차량: {STRING}
-STR_CONFIG_SETTING_NEWS_NEW_VEHICLES_HELPTEXT                   :새로운 차량 종류를 사용할 수 있게 되면 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_NEW_VEHICLES_HELPTEXT                   :새로운 차량 종류를 사용할 수 있게 되면 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_CHANGES_ACCEPTANCE                      :역에서 받는 화물의 변경: {STRING}
-STR_CONFIG_SETTING_NEWS_CHANGES_ACCEPTANCE_HELPTEXT             :역사가 받을 수 있는 화물이 변경될 경우 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_CHANGES_ACCEPTANCE_HELPTEXT             :역사가 받을 수 있는 화물이 변경될 경우 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_SUBSIDIES                               :보조금: {STRING}
-STR_CONFIG_SETTING_NEWS_SUBSIDIES_HELPTEXT                      :보조금과 관련된 소식을 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_SUBSIDIES_HELPTEXT                      :보조금과 관련된 소식을 메시지로 알려줍니다
 
 STR_CONFIG_SETTING_NEWS_GENERAL_INFORMATION                     :일반 정보: {STRING}
-STR_CONFIG_SETTING_NEWS_GENERAL_INFORMATION_HELPTEXT            :도로 재건축 투자나 수송 독점권의 구입 등과 같은 일반적인 사건에 대한 소식을 메시지로 알려줍니다.
+STR_CONFIG_SETTING_NEWS_GENERAL_INFORMATION_HELPTEXT            :도로 재건축 투자나 수송 독점권의 구입 등과 같은 일반적인 사건에 대한 소식을 메시지로 알려줍니다
 ###length 3
 STR_CONFIG_SETTING_NEWS_MESSAGES_OFF                            :끄기
 STR_CONFIG_SETTING_NEWS_MESSAGES_SUMMARY                        :상태 표시줄로 알림
@@ -2258,6 +2261,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}기후:
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}지도 크기: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}서버 버전: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}서버 주소: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}초대 코드: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}시작 날짜: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}현재 날짜: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}게임 스크립트: {WHITE}{STRING} (v{NUM})
@@ -2674,6 +2678,7 @@ STR_STATION_CLASS_WAYP                                          :경유지
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}신호기 선택
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}고급 신호기 종류를 보이거나 감춥니다
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}폐색 신호기 (구식){}가장 기본적인 신호기 형식입니다. 단 한 대의 열차만이 이 폐색 구간을 통과할 수 있습니다
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}입구 신호기 (구식){}다음 폐색 구간에 있는 출구 신호기가 하나라도 파란불이면 파란불이 되며, 그렇지 않은 경우에는 빨간불이 됩니다
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}출구 신호기 (구식){}일반 신호기와 기능이 똑같지만, 입구 & 복합 신호기와 올바르게 연계되어야 합니다
@@ -3558,7 +3563,7 @@ STR_STATION_VIEW_VIA                                            :{YELLOW}{1:STAT
 STR_STATION_VIEW_TO                                             :{YELLOW}{1:STATION} 도착: {0:CARGO_SHORT}
 STR_STATION_VIEW_FROM_ANY                                       :{RED}알 수 없는 역에서 출발한 {CARGO_SHORT}
 STR_STATION_VIEW_TO_ANY                                         :{RED}아무 역에나 도착하는 {CARGO_SHORT}
-STR_STATION_VIEW_VIA_ANY                                        :{RED}어디든 경유하는 {CARGO_SHORT}
+STR_STATION_VIEW_VIA_ANY                                        :{RED}아무 역이나 경유하는 {CARGO_SHORT}
 STR_STATION_VIEW_FROM_HERE                                      :{GREEN}여기에서 출발하는 {CARGO_SHORT}
 STR_STATION_VIEW_VIA_HERE                                       :{GREEN}이 역을 경유하는 {CARGO_SHORT}
 STR_STATION_VIEW_TO_HERE                                        :{GREEN}이 역에 도착하는 {CARGO_SHORT}
@@ -4786,11 +4791,11 @@ STR_ERROR_MUST_DEMOLISH_AIRPORT_FIRST                           :{WHITE}공항�
 STR_ERROR_WAYPOINT_ADJOINS_MORE_THAN_ONE_EXISTING               :{WHITE}최소한 하나 이상의 경유지와 연결하십시오
 STR_ERROR_TOO_CLOSE_TO_ANOTHER_WAYPOINT                         :{WHITE}다른 경유지와 너무 가깝습니다!
 
-STR_ERROR_CAN_T_BUILD_TRAIN_WAYPOINT                            :{WHITE}여기에 열차 경유지를 건설할 수 없습니다
+STR_ERROR_CAN_T_BUILD_TRAIN_WAYPOINT                            :{WHITE}여기에 열차 경유지를 설치할 수 없습니다...
 STR_ERROR_CAN_T_POSITION_BUOY_HERE                              :{WHITE}여기에 부표를 설치할 수 없습니다...
 STR_ERROR_CAN_T_CHANGE_WAYPOINT_NAME                            :{WHITE}경유지의 이름을 변경할 수 없습니다...
 
-STR_ERROR_CAN_T_REMOVE_TRAIN_WAYPOINT                           :{WHITE}이 열차 경유지를 제거할 수 없습니다
+STR_ERROR_CAN_T_REMOVE_TRAIN_WAYPOINT                           :{WHITE}이 열차 경유지를 제거할 수 없습니다...
 STR_ERROR_MUST_REMOVE_RAILWAYPOINT_FIRST                        :{WHITE}열차 경유지를 먼저 제거하십시오
 STR_ERROR_BUOY_IN_THE_WAY                                       :{WHITE}... 도중에 부표가 있습니다
 STR_ERROR_BUOY_IS_IN_USE                                        :{WHITE}... 다른 회사에서 사용 중인 부표입니다!
@@ -4985,7 +4990,7 @@ STR_ERROR_NO_VEHICLES_AVAILABLE_YET_EXPLANATION                 :{WHITE}{DATE_SH
 # Specific vehicle errors
 STR_ERROR_CAN_T_MAKE_TRAIN_PASS_SIGNAL                          :{WHITE}너무 위험해서 신호를 무시할 수 없습니다...
 STR_ERROR_CAN_T_REVERSE_DIRECTION_TRAIN                         :{WHITE}열차를 회차시킬 수 없습니다...
-STR_ERROR_TRAIN_START_NO_POWER                                  :동력차가 없습니다
+STR_ERROR_TRAIN_START_NO_POWER                                  :동력이 없습니다
 
 STR_ERROR_CAN_T_MAKE_ROAD_VEHICLE_TURN                          :{WHITE}차량을 유턴시킬 수 없습니다...
 
@@ -5552,41 +5557,3 @@ STR_PLANE                                                       :{G=f}{BLACK}{PL
 STR_SHIP                                                        :{G=f}{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings
-STR_ABOUT_MENU_TUTORIAL                                         : {BLACK}튜토리얼
-STR_SMALLMAP_TOOLTIP_SHOW_LEGEND                                :{BLACK}지도 범례 / 기호 설명을 보여줌
-STR_CONFIG_SETTING_VERTICAL_TOOLBAR                             :수직 작업창: {STRING}
-STR_CONFIG_SETTING_VERTICAL_TOOLBAR_HELPTEXT                    :메인 작업창이 두 개의 화면 양쪽 두개의 수직 작업창으로 나뉨
-STR_CONFIG_SETTING_COMPACT_VERTICAL_TOOLBAR                     :소형 수직 작업창: {STRING}
-STR_CONFIG_SETTING_COMPACT_VERTICAL_TOOLBAR_HELPTEXT            :수직 작업창에 '작업창 바꾸기'메뉴가 없지만, 부 메뉴가 추가로 있음
-STR_CONFIG_SETTING_BUTTON_SIZE                                  : {BLACK}버튼 크기
-STR_CONFIG_SETTING_BUTTON_SIZE_TOOLTIP                          : {BLACK}모든 사용자 인터페이스의 크기
-STR_CONFIG_SETTING_FONT_SIZE                                    :{BLACK}글씨 크기
-STR_CONFIG_SETTING_FONT_SIZE_TOOLTIP                            :{BLACK}모든 게임 글씨의 크기
-STR_CONFIG_SETTING_BUILD_CONFIRMATION                           :명령 확인: {STRING}
-STR_CONFIG_SETTING_BUILD_CONFIRMATION_HELPTEXT                  :도로와 정류장을 건설시 확인 팝업을 보임
-STR_CONFIG_SETTING_WINDOWS_TITLEBARS                            :이름 창
-STR_CONFIG_SETTING_WINDOWS_TITLEBARS_HELPTEXT                   :{BLACK}모든 창에 대해 이름을 보여주거나, 화면 공간 절약을 위해 이름을 가리기
-STR_CONFIG_SETTING_WINDOWS_DECORATIONS                          :창 꾸미기: {STRING}
-STR_CONFIG_SETTING_WINDOWS_DECORATIONS_HELPTEXT                 :창 모서리에 꾸밈 효과
-STR_CONFIG_SETTING_VIDEO_8BPP                                   : {BLACK}8비트
-STR_CONFIG_SETTING_VIDEO_8BPP_HELPTEXT                          :그래픽 색상 심도를 픽셀당 8비트로 설정합니다. 이 그래픽 모드는 물이 흐르는 애니메이션 효과를 표현할 수 있습니다.
-STR_CONFIG_SETTING_VIDEO_16BPP                                  : {BLACK}16비트
-STR_CONFIG_SETTING_VIDEO_16BPP_HELPTEXT                         :{BLACK}그래픽 색상 심도를 픽셀당 16비트로 설정합니다. 이 그래픽 모드는 물이 흐르는 애니메이션 효과를 표현할 수 있습니다.
-STR_CONFIG_SETTING_VIDEO_24BPP                                  :{BLACK}24비트
-STR_CONFIG_SETTING_VIDEO_24BPP_HELPTEXT                         :그래픽 색상 심도를 픽셀당 24비트로 설정합니다. 이 그래픽 모드는 물이 흐르는 애니메이션 효과를 표현할 수 있습니다.
-STR_TABLET_CLOSE_TOOLTIP                                        :{BLACK}열려있는 모든 창 닫기 (고정된 창 제외)
-STR_TABLET_SHIFT_TOOLTIP                                        :{BLACK}이 행동을 하기 위한 예상 비용을 알아보려면 누르세요.
-STR_TABLET_CTRL_TOOLTIP                                         :{BLACK}"컨트롤"키를 이용하는 명령을 위해 사용
-STR_TUTORIAL_WINDOW_TITLE                                       :{BLACK}튜토리얼 영상
-STR_TUTORIAL_WINDOW_TOOLTIP                                     :{BLACK}튜토리얼 영상을 보기 위해 비디오 플레이어를 열기
-STR_TUTORIAL_ROADS_AND_STATIONS                                 :{BLACK}도로, 역 건설 및 차량 구입
-STR_TUTORIAL_RAILWAYS                                           :{BLACK}선로 및 열차
-STR_TUTORIAL_ROAD_VEHICLES                                      :{BLACK}차량
-STR_TUTORIAL_SHIPS                                              :{BLACK}선박과 항구
-STR_TUTORIAL_CARGO                                              :{BLACK}화물 종류
-STR_SAVELOAD_LOAD_NETWORK_BUTTON                                :{BLACK}네트워크에서 불러오기
-STR_SAVELOAD_LOAD_NETWORK_TOOLTIP                               :{BLACK}네트워크 저장소에서 불러오기
-STR_SAVELOAD_SAVE_NETWORK_BUTTON                                :{BLACK}네트워크에 저장
-STR_SAVELOAD_SAVE_NETWORK_TOOLTIP                               :{BLACK}네트워크 저장소로 게임을 백업

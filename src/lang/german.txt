@@ -1152,10 +1152,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alpin
 STR_TERRAIN_TYPE_CUSTOM                                         :Benutzerdefinierte Höhe
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Benutzerdefinierte Höhe ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Hoch
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Mäßig
 STR_CITY_APPROVAL_HOSTILE                                       :Gering
+STR_CITY_APPROVAL_PERMISSIVE                                    :Hoch
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Keine KI gefunden...{}Verschiedene KI sind via „Erweiterungen herunterladen“ verfügbar
 
@@ -1744,6 +1744,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Zeitung anzeige
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Unfälle und Katastrophen: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Zeitung anzeigen, wenn Unfälle oder Katastrophen auftreten
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Unfälle von Mitbewerberfahrzeugen: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Zeitung anzeigen, wenn Fahrzeuge eines Mitbewerbers Unfälle haben
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Firmenmitteilungen: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Zeitung anzeigen, wenn neue Firmen gegründet werden oder kurz vor dem Bankrott stehen
 
@@ -2258,6 +2261,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Landsch
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Spielfeldgröße: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Serverversion: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Serveradresse: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Einladungscode: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Startdatum: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Aktuelles Datum: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Spielskript: {WHITE}{STRING} (v{NUM})
@@ -2413,6 +2417,7 @@ STR_NETWORK_CHAT_TO_COMPANY                                     :[Team] an {STRI
 STR_NETWORK_CHAT_CLIENT                                         :[Privat] {STRING}: {WHITE}{STRING}
 STR_NETWORK_CHAT_TO_CLIENT                                      :[Privat] an {STRING}: {WHITE}{STRING}
 STR_NETWORK_CHAT_ALL                                            :[Alle] {STRING}: {WHITE}{STRING}
+STR_NETWORK_CHAT_EXTERNAL                                       :[{3:STRING}] {0:STRING}: {WHITE}{1:STRING}
 STR_NETWORK_CHAT_OSKTITLE                                       :{BLACK}Chattext eingeben
 
 # Network messages
@@ -2673,6 +2678,7 @@ STR_STATION_CLASS_WAYP                                          :Wegpunkte
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Signalauswahl
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Das Zeigen erweiterter Signaltypen umschalten
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Blocksignal (Formsignal){}Dies ist der einfachste Signaltyp. Bei Verwendung dieses Signaltyps darf sich immer nur ein Zug im Signalabschnitt aufhalten
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Einfahrsignal (Formsignal){}Zeigt grün, wenn im nächsten Block mindestens ein Ausfahrsignal grün zeigt. Andernfalls zeigt es rot
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Ausfahrsignal (Formsignal){}Verhält sich wie ein Blocksignal, wird jedoch benötigt, um den Einfahr- oder Kombinationssignalen des Blockes „frei“ zu melden
@@ -5551,38 +5557,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings
-STR_ABOUT_MENU_TUTORIAL                                         :Tutorial
-STR_SMALLMAP_TOOLTIP_SHOW_LEGEND                                :{BLACK}Zeige Kartenlegende / Beschreibung der Kartensymbole
-STR_CONFIG_SETTING_VERTICAL_TOOLBAR                             :Vertikale Werkzeugsleiste: {STRING}
-STR_CONFIG_SETTING_VERTICAL_TOOLBAR_HELPTEXT                    :Hauptwerzeugleiste ist in zwei vertikale Leisten an den Bildschirmseiten aufgeteilt
-STR_CONFIG_SETTING_COMPACT_VERTICAL_TOOLBAR                     :Kompakte vertikale Werkzeugleiste: {STRING}
-STR_CONFIG_SETTING_BUTTON_SIZE                                  :Schaltflächengröße
-STR_CONFIG_SETTING_BUTTON_SIZE_TOOLTIP                          :Größe aller Elemente der Benutzeroberfläche
-STR_CONFIG_SETTING_FONT_SIZE                                    :{BLACK}Schriftgröße
-STR_CONFIG_SETTING_FONT_SIZE_TOOLTIP                            :Größe aller Schriftarten
-STR_CONFIG_SETTING_BUILD_CONFIRMATION                           :Aktionen bestätigen: {STRING}
-STR_CONFIG_SETTING_BUILD_CONFIRMATION_HELPTEXT                  :Zeige Bestätigungsdialog bei Straßen- und Haltenstellebau
-STR_CONFIG_SETTING_WINDOWS_TITLEBARS                            :{BLACK}Titelleisten
-STR_CONFIG_SETTING_WINDOWS_TITLEBARS_HELPTEXT                   :{BLACK}Zeige in allen Fenstern die Titelleiste an oder verbirg sie, um Platz zu sparen.
-STR_CONFIG_SETTING_VIDEO_8BPP                                   :8 bit
-STR_CONFIG_SETTING_VIDEO_8BPP_HELPTEXT                          :Setzt die Farbtiefe auf 8 Bits per Pixel. Dieser Modus unterstützt Wasseranimation
-STR_CONFIG_SETTING_VIDEO_16BPP                                  :16 bit
-STR_CONFIG_SETTING_VIDEO_16BPP_HELPTEXT                         :{BLACK}Setzt die Farbtiefe auf 16 Bit per Pixel. Erfordert einen Neustart. Dieser Modus unterstützt keine Wasseranimation
-STR_CONFIG_SETTING_VIDEO_24BPP                                  :24 bit
-STR_CONFIG_SETTING_VIDEO_24BPP_HELPTEXT                         :Setzt die Farbtiefe auf 24 Bits per Pixel. Dieser Modus unterstützt Wasseranimation
-STR_TABLET_CLOSE_TOOLTIP                                        :{BLACK}Schließe alle offene Fenster (außer festgepinnte)
-STR_TABLET_SHIFT_TOOLTIP                                        :{BLACK}Drücke hier, um eine Kostenabschätzung für die Durchführung einer Aktion zu erhalten
-STR_TABLET_CTRL_TOOLTIP                                         :{BLACK}Für Aktionen benutzen, welche die "STRG" Taste benutzen
-STR_TUTORIAL_WINDOW_TITLE                                       :{BLACK}Tutorial Videos
-STR_TUTORIAL_WINDOW_TOOLTIP                                     :{BLACK}Öffne einen Videoplayer, um Tutorial videos anzuschauen
-STR_TUTORIAL_ROADS_AND_STATIONS                                 :{BLACK}Strassen und Haltestellen bauen, Fahrzeuge kaufen
-STR_TUTORIAL_RAILWAYS                                           :{BLACK}Eisenbahnen und Züge
-STR_TUTORIAL_ROAD_VEHICLES                                      :{BLACK}Straßenfahrzeuge
-STR_TUTORIAL_SHIPS                                              :{BLACK}Schiffe und Docks
-STR_TUTORIAL_CARGO                                              :{BLACK}Warentypen
-STR_SAVELOAD_LOAD_NETWORK_BUTTON                                :{BLACK}Laden vom Netzwerk
-STR_SAVELOAD_LOAD_NETWORK_TOOLTIP                               :{BLACK}Öffne ein Spiel aus dem Netzwerkspeicher
-STR_SAVELOAD_SAVE_NETWORK_BUTTON                                :{BLACK}Speichern ins Netzwerk
-STR_SAVELOAD_SAVE_NETWORK_TOOLTIP                               :{BLACK}Spiel zurück in den Netzwerkspeicher backupen

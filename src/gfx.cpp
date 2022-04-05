@@ -20,6 +20,7 @@
 #include "window_func.h"
 #include "newgrf_debug.h"
 #include "thread.h"
+#include "core/backup_type.hpp"
 
 #include "table/palettes.h"
 #include "table/string_colours.h"
@@ -34,14 +35,11 @@ byte _support8bpp;
 CursorVars _cursor;
 bool _ctrl_pressed;   ///< Is Ctrl pressed?
 bool _shift_pressed;  ///< Is Shift pressed?
-bool _move_pressed;
 uint16 _game_speed = 100; ///< Current game-speed; 100 is 1x, 0 is infinite.
 bool _left_button_down;     ///< Is left mouse button pressed?
 bool _left_button_clicked;  ///< Is left mouse button clicked?
 bool _right_button_down;    ///< Is right mouse button pressed?
 bool _right_button_clicked; ///< Is right mouse button clicked?
-Point _right_button_down_pos; ///< Pos of right mouse button click, for drag and drop
-
 DrawPixelInfo _screen;
 bool _screen_disable_anim = false;   ///< Disable palette animation (important for 32bpp-anim blitter during giant screenshot)
 std::atomic<bool> _exit_game;
@@ -1060,50 +1058,6 @@ void DrawSprite(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub,
 }
 
 /**
- * Draw a sprite, centered at x:y, not in a viewport
- * @param img  Image number to draw
- * @param pal  Palette to use.
- * @param x    Left coordinate of image in pixels
- * @param y    Top coordinate of image in pixels
- * @param sub  If available, draw only specified part of the sprite
- * @param zoom Zoom level of sprite
- */
-void DrawSpriteCentered(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub, ZoomLevel zoom)
-{
-	Dimension size = GetSpriteSize(img, NULL, zoom);
-	DrawSprite(img, pal, x - size.width / 2, y - size.height / 2, sub, zoom);
-}
-
-/**
- * Draw a sprite, centered in rect, not in a viewport
- * @param img    Image number to draw
- * @param pal    Palette to use.
- * @param left   Left coordinate of image bounding box in pixels
- * @param top    Top coordinate of image bounding box in pixels
- * @param right  Right coordinate of image bounding box in pixels
- * @param bottom Bottom coordinate of image bounding box in pixels
- * @param sub    If available, draw only specified part of the sprite
- * @param zoom   Zoom level of sprite
- */
-void DrawSpriteCenteredRect(SpriteID img, PaletteID pal, int left, int top, int right, int bottom, const SubSprite *sub, ZoomLevel zoom)
-{
-	DrawSpriteCentered(img, pal, (left + right) / 2, (top + bottom) / 2, sub, zoom);
-}
-
-/**
- * Draw a sprite, centered in rect, not in a viewport
- * @param img    Image number to draw
- * @param pal    Palette to use.
- * @param rect   Image bounding box in pixels
- * @param sub    If available, draw only specified part of the sprite
- * @param zoom   Zoom level of sprite
- */
-void DrawSpriteCenteredRect(SpriteID img, PaletteID pal, const Rect &rect, const SubSprite *sub, ZoomLevel zoom)
-{
-	DrawSpriteCenteredRect(img, pal, rect.left, rect.top, rect.right, rect.bottom, sub, zoom);
-}
-
-/**
  * The code for setting up the blitter mode and sprite information before finally drawing the sprite.
  * @param sprite The sprite to draw.
  * @param x The X location to draw.
@@ -1237,39 +1191,58 @@ static void GfxBlitter(const Sprite * const sprite, int x, int y, BlitterMode mo
  * Draws a sprite to a new RGBA buffer (see Colour union) instead of drawing to the screen.
  *
  * @param spriteId The sprite to draw.
+ * @param zoom The zoom level at which to draw the sprites.
  * @return Pixel buffer, or nullptr if an 8bpp blitter is being used.
  */
-std::unique_ptr<uint32[]> DrawSpriteToRgbaBuffer(SpriteID spriteId)
+std::unique_ptr<uint32[]> DrawSpriteToRgbaBuffer(SpriteID spriteId, ZoomLevel zoom)
 {
+	/* Invalid zoom level requested? */
+	if (zoom < _settings_client.gui.zoom_min || zoom > _settings_client.gui.zoom_max) return nullptr;
+
 	Blitter *blitter = BlitterFactory::GetCurrentBlitter();
-	if (!blitter->Is32BppSupported()) return nullptr;
+	if (blitter->GetScreenDepth() != 8 && blitter->GetScreenDepth() != 32) return nullptr;
 
 	/* Gather information about the sprite to write, reserve memory */
 	const SpriteID real_sprite = GB(spriteId, 0, SPRITE_WIDTH);
 	const Sprite *sprite = GetSprite(real_sprite, ST_NORMAL);
-	std::unique_ptr<uint32[]> result(new uint32[sprite->width * sprite->height]);
+	Dimension dim = GetSpriteSize(real_sprite, nullptr, zoom);
+	std::unique_ptr<uint32[]> result(new uint32[dim.width * dim.height]);
+	/* Set buffer to fully transparent. */
+	MemSetT(result.get(), 0, dim.width * dim.height);
 
 	/* Prepare new DrawPixelInfo - Normally this would be the screen but we want to draw to another buffer here.
 	 * Normally, pitch would be scaled screen width, but in our case our "screen" is only the sprite width wide. */
 	DrawPixelInfo dpi;
 	dpi.dst_ptr = result.get();
-	dpi.pitch = sprite->width;
+	dpi.pitch = dim.width;
 	dpi.left = 0;
 	dpi.top = 0;
-	dpi.width = sprite->width;
-	dpi.height = sprite->height;
-	dpi.zoom = ZOOM_LVL_NORMAL;
+	dpi.width = dim.width;
+	dpi.height = dim.height;
+	dpi.zoom = zoom;
 
-	/* Zero out the allocated memory, there may be garbage present. */
-	uint32 *writeHead = (uint32*)result.get();
-	for (int i = 0; i < sprite->width * sprite->height; i++) {
-		writeHead[i] = 0;
+	/* If the current blitter is a paletted blitter, we have to render to an extra buffer and resolve the palette later. */
+	std::unique_ptr<byte[]> pal_buffer{};
+	if (blitter->GetScreenDepth() == 8) {
+		pal_buffer.reset(new byte[dim.width * dim.height]);
+		MemSetT(pal_buffer.get(), 0, dim.width * dim.height);
+
+		dpi.dst_ptr = pal_buffer.get();
 	}
 
 	/* Temporarily disable screen animations while blitting - This prevents 40bpp_anim from writing to the animation buffer. */
-	_screen_disable_anim = true;
-	GfxBlitter<1, false>(sprite, 0, 0, BM_NORMAL, nullptr, real_sprite, ZOOM_LVL_NORMAL, &dpi);
-	_screen_disable_anim = false;
+	Backup<bool> disable_anim(_screen_disable_anim, true, FILE_LINE);
+	GfxBlitter<1, true>(sprite, 0, 0, BM_NORMAL, nullptr, real_sprite, zoom, &dpi);
+	disable_anim.Restore();
+
+	if (blitter->GetScreenDepth() == 8) {
+		/* Resolve palette. */
+		uint32 *dst = result.get();
+		const byte *src = pal_buffer.get();
+		for (size_t i = 0; i < dim.height * dim.width; ++i) {
+			*dst++ = _cur_palette.palette[*src++].data;
+		}
+	}
 
 	return result;
 }
@@ -1530,7 +1503,7 @@ void ScreenSizeChanged()
 void UndrawMouseCursor()
 {
 	/* Don't undraw mouse cursor if it is handled by the video driver. */
-	if (VideoDriver::GetInstance()->UseSystemCursor() || !_settings_client.gui.draw_mouse_cursor) return;
+	if (VideoDriver::GetInstance()->UseSystemCursor()) return;
 
 	/* Don't undraw the mouse cursor if the screen is not ready */
 	if (_screen.dst_ptr == nullptr) return;
@@ -1546,7 +1519,7 @@ void UndrawMouseCursor()
 void DrawMouseCursor()
 {
 	/* Don't draw mouse cursor if it is handled by the video driver. */
-	if (VideoDriver::GetInstance()->UseSystemCursor() || !_settings_client.gui.draw_mouse_cursor) return;
+	if (VideoDriver::GetInstance()->UseSystemCursor()) return;
 
 	/* Don't draw the mouse cursor if the screen is not ready */
 	if (_screen.dst_ptr == nullptr) return;

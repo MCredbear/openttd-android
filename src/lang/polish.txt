@@ -1531,10 +1531,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alpejski
 STR_TERRAIN_TYPE_CUSTOM                                         :Niestandardowa wysokość
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Niestandardowa wysokość ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Przyjazne
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Tolerancyjne
 STR_CITY_APPROVAL_HOSTILE                                       :Wrogie
+STR_CITY_APPROVAL_PERMISSIVE                                    :Przyjazne
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Brak pasujących SI...{}Możesz pobrać wszystkie SI przez system "Dodatki online"
 
@@ -2123,6 +2123,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Wyświetl wiado
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Wypadki / klęski: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Wyświetl wiadomość w gazecie kiedy zdarzy się wypadek lub nastąpi katastrofa
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Wypadki pojazdów konkurentów: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Wyświetl wiadomość w gazecie o rozbitych pojazdach konkurentów
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Informacja firmy: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Wyświetl wiadomość w gazecie kiedy powstaje nowa firma lub kiedy istniejącym firmom grozi bankructwo
 
@@ -2637,6 +2640,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Krajobr
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Rozmiar mapy: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Wersja serwera: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Adres serwera: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Kod zaproszenia: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Data uruchomienia: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Aktualna data: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Game Script: {WHITE}{STRING} (v{NUM})
@@ -3053,6 +3057,7 @@ STR_STATION_CLASS_WAYP                                          :Posterunki
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Wybór sygnałów
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Przełącznik pokazujący zaawansowane typy sygnałów
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Sygnalizator bloku (semafor){}Najprostszy typ sygnału pozwalający na przebywanie w jednym bloku wyłącznie jednemu pociągowi naraz
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Sygnalizator wejściowy (semafor){}Zielony, póki choć jeden sygnalizator wyjściowy dla kolejnego odcinka trasy jest zielony. W przeciwnym wypadku czerwony.
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Sygnalizator wyjściowy (semafor){}Zachowuje się jak sygnalizator blokowy, lecz jest niezbędny do zmiany na poprawny kolor w presygnalizatorach wejściowych i złożonych
@@ -3137,7 +3142,7 @@ STR_WATERWAYS_TOOLBAR_BUILD_DEPOT_TOOLTIP                       :{BLACK}Wybuduj 
 STR_WATERWAYS_TOOLBAR_BUILD_DOCK_TOOLTIP                        :{BLACK}Zbuduj port. Ctrl umożliwia łączenie stacji. Shift przełącza pomiędzy trybem budowania a szacowaniem jego kosztów
 STR_WATERWAYS_TOOLBAR_BUOY_TOOLTIP                              :{BLACK}Ustaw boję, która może być użyta jako pkt. orientacyjny. Shift przełącza pomiędzy trybem budowania a szacowaniem jego kosztów
 STR_WATERWAYS_TOOLBAR_BUILD_AQUEDUCT_TOOLTIP                    :{BLACK}Zbuduj akwedukt. Shift przełącza pomiędzy trybem budowania a szacowaniem jego kosztów
-STR_WATERWAYS_TOOLBAR_CREATE_LAKE_TOOLTIP                       :{BLACK}Stwórz akwen wodny.{}Tworzy kanał, chyba że przyrzymany jest CTRL na poziomie morza, wtedy pobliski teren zostanie zatopiony
+STR_WATERWAYS_TOOLBAR_CREATE_LAKE_TOOLTIP                       :{BLACK}Stwórz akwen wodny.{}Tworzy kanał, chyba że przytrzymany jest CTRL na poziomie morza, wtedy pobliski teren zostanie zatopiony
 STR_WATERWAYS_TOOLBAR_CREATE_RIVER_TOOLTIP                      :{BLACK}Umieszczanie rzek. Ctrl zaznacza obszar po przekątnej.
 
 # Ship depot construction window
@@ -5974,5 +5979,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

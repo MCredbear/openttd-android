@@ -206,7 +206,7 @@ static inline bool IsValidNewGRFImageIndex(uint8 image_index)
 	return image_index == 0xFD || IsValidImageIndex<T>(image_index);
 }
 
-class OTTDByteReaderSignal: public std::runtime_error { public: OTTDByteReaderSignal():std::runtime_error("OTTDByteReaderSignal: NewGRF byte data invalid") {} };
+class OTTDByteReaderSignal { };
 
 /** Class to read from a NewGRF file */
 class ByteReader {
@@ -2679,8 +2679,8 @@ static ChangeInfoResult GlobalVarChangeInfo(uint gvid, int numinfo, int prop, By
 				uint16 options = buf->ReadWord();
 
 				if (curidx < CURRENCY_END) {
-					_currency_specs[curidx].separator[0] = GB(options, 0, 8);
-					_currency_specs[curidx].separator[1] = '\0';
+					_currency_specs[curidx].separator.clear();
+					_currency_specs[curidx].separator.push_back(GB(options, 0, 8));
 					/* By specifying only one bit, we prevent errors,
 					 * since newgrf specs said that only 0 and 1 can be set for symbol_pos */
 					_currency_specs[curidx].symbol_pos = GB(options, 8, 1);
@@ -3019,7 +3019,7 @@ static ChangeInfoResult CargoChangeInfo(uint cid, int numinfo, int prop, ByteRea
 			}
 
 			case 0x19: // Town growth coefficient
-				cs->multipliertowngrowth = buf->ReadWord();
+				buf->ReadWord();
 				break;
 
 			case 0x1A: // Bitmask of callbacks to use
@@ -7045,6 +7045,10 @@ static uint32 GetPatchVariable(uint8 param)
 		/* Shore base sprite */
 		case 0x16:
 			return SPR_SHORE_BASE;
+
+		/* Game map seed */
+		case 0x17:
+			return _settings_game.game_creation.generation_seed;
 
 		default:
 			grfmsg(2, "ParamSet: Unknown Patch variable 0x%02X.", param);

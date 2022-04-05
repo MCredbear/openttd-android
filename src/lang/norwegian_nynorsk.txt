@@ -1091,10 +1091,10 @@ STR_TERRAIN_TYPE_HILLY                                          :Åslendt
 STR_TERRAIN_TYPE_MOUNTAINOUS                                    :Berglendt
 STR_TERRAIN_TYPE_ALPINIST                                       :Alpinist
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Tillatande
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Tolerant
 STR_CITY_APPROVAL_HOSTILE                                       :Fiendsleg
+STR_CITY_APPROVAL_PERMISSIVE                                    :Tillatande
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Inga passande AIer tilgjengeleg...{}Du kan lasta ned fleire AI'ar frå nettet med spelets nedlastingssystem.
 
@@ -1583,6 +1583,7 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Vis nyheitsarti
 
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Ulykker/katastrofar: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Vis nyheitsartiklar ved ulykker eller katastrofar
+
 
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Firmainformasjon: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Vis nyheitsartiklar når nye firma startar opp, eller når firma risikerer konkurs
@@ -5042,5 +5043,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

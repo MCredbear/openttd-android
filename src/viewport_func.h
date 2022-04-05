@@ -59,7 +59,6 @@ void StartSpriteCombine();
 void EndSpriteCombine();
 
 bool HandleViewportClicked(const Viewport *vp, int x, int y);
-bool HandleViewportMouseUp(const Viewport *vp, int x, int y);
 void SetRedErrorSquare(TileIndex tile);
 void SetTileSelectSize(int w, int h);
 void SetTileSelectBigSize(int ox, int oy, int sx, int sy);
@@ -99,6 +98,6 @@ struct Town;
 
 void SetViewportCatchmentStation(const Station *st, bool sel);
 void SetViewportCatchmentTown(const Town *t, bool sel);
-void ToolbarSelectLastTool();
+void MarkCatchmentTilesDirty();
 
 #endif /* VIEWPORT_FUNC_H */

@@ -16,10 +16,6 @@
 #include "settings_type.h"
 #include <mutex>
 
-#ifdef __ANDROID__
-#include <android/log.h>
-#endif
-
 #if defined(_WIN32)
 #include "os/windows/win32.h"
 #endif
@@ -120,9 +116,6 @@ char *DumpDebugFacilityNames(char *buf, char *last)
  */
 void DebugPrint(const char *level, const std::string &message)
 {
-#ifdef __ANDROID__
-	__android_log_print(ANDROID_LOG_INFO, "OpenTTD", "[%s] %s", dbg, buf);
-#endif
 	if (_debug_socket != INVALID_SOCKET) {
 		std::string msg = fmt::format("{}dbg: [{}] {}\n", GetLogPrefix(), level, message);
 

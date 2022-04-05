@@ -32,6 +32,9 @@
 #include "date_func.h"
 #include "newgrf_debug.h"
 #include "vehicle_func.h"
+#include "station_func.h"
+#include "object_cmd.h"
+#include "landscape_cmd.h"
 
 #include "table/strings.h"
 #include "table/object_land.h"
@@ -121,7 +124,9 @@ void BuildObject(ObjectType type, TileIndex tile, CompanyID owner, Town *town, u
 			Company::Get(owner)->infrastructure.water++;
 			DirtyCompanyInfrastructureWindows(owner);
 		}
+		bool remove = IsDockingTile(t);
 		MakeObject(t, owner, o->index, wc, Random());
+		if (remove) RemoveDockingTile(t);
 		MarkTileDirtyByTile(t);
 	}
 
@@ -192,20 +197,17 @@ static CommandCost ClearTile_Object(TileIndex tile, DoCommandFlag flags);
 
 /**
  * Build an object object
- * @param tile tile where the object will be located
  * @param flags type of operation
- * @param p1 the object type to build
- * @param p2 the view for the object
- * @param text unused
+ * @param tile tile where the object will be located
+ * @param type the object type to build
+ * @param view the view for the object
  * @return the cost of this operation or an error
  */
-CommandCost CmdBuildObject(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const std::string &text)
+CommandCost CmdBuildObject(DoCommandFlag flags, TileIndex tile, ObjectType type, uint8 view)
 {
-	CommandCost cost(EXPENSES_PROPERTY);
+	CommandCost cost(EXPENSES_CONSTRUCTION);
 
-	ObjectType type = (ObjectType)GB(p1, 0, 16);
 	if (type >= NUM_OBJECTS) return CMD_ERROR;
-	uint8 view = GB(p2, 0, 2);
 	const ObjectSpec *spec = ObjectSpec::Get(type);
 	if (_game_mode == GM_NORMAL && !spec->IsAvailable() && !_generating_world) return CMD_ERROR;
 	if ((_game_mode == GM_EDITOR || _generating_world) && !spec->WasEverAvailable()) return CMD_ERROR;
@@ -226,7 +228,7 @@ CommandCost CmdBuildObject(TileIndex tile, DoCommandFlag flags, uint32 p1, uint3
 
 	if (type == OBJECT_OWNED_LAND) {
 		/* Owned land is special as it can be placed on any slope. */
-		cost.AddCost(DoCommand(tile, 0, 0, flags, CMD_LANDSCAPE_CLEAR));
+		cost.AddCost(Command<CMD_LANDSCAPE_CLEAR>::Do(flags, tile));
 	} else {
 		/* Check the surface to build on. At this time we can't actually execute the
 		 * the CLEAR_TILE commands since the newgrf callback later on can check
@@ -239,7 +241,7 @@ CommandCost CmdBuildObject(TileIndex tile, DoCommandFlag flags, uint32 p1, uint3
 				if (!IsWaterTile(t)) {
 					/* Normal water tiles don't have to be cleared. For all other tile types clear
 					 * the tile but leave the water. */
-					cost.AddCost(DoCommand(t, 0, 0, flags & ~DC_NO_WATER & ~DC_EXEC, CMD_LANDSCAPE_CLEAR));
+					cost.AddCost(Command<CMD_LANDSCAPE_CLEAR>::Do(flags & ~DC_NO_WATER & ~DC_EXEC, t));
 				} else {
 					/* Can't build on water owned by another company. */
 					Owner o = GetTileOwner(t);
@@ -257,7 +259,7 @@ CommandCost CmdBuildObject(TileIndex tile, DoCommandFlag flags, uint32 p1, uint3
 						IsTileType(t, MP_OBJECT) &&
 						IsTileOwner(t, _current_company) &&
 						IsObjectType(t, OBJECT_HQ))) {
-					cost.AddCost(DoCommand(t, 0, 0, flags & ~DC_EXEC, CMD_LANDSCAPE_CLEAR));
+					cost.AddCost(Command<CMD_LANDSCAPE_CLEAR>::Do(flags & ~DC_EXEC, t));
 				}
 			}
 		}
@@ -289,10 +291,10 @@ CommandCost CmdBuildObject(TileIndex tile, DoCommandFlag flags, uint32 p1, uint3
 			for (TileIndex t : ta) {
 				if (HasTileWaterGround(t)) {
 					if (!IsWaterTile(t)) {
-						DoCommand(t, 0, 0, (flags & ~DC_NO_WATER) | DC_NO_MODIFY_TOWN_RATING, CMD_LANDSCAPE_CLEAR);
+						Command<CMD_LANDSCAPE_CLEAR>::Do((flags & ~DC_NO_WATER) | DC_NO_MODIFY_TOWN_RATING, t);
 					}
 				} else {
-					DoCommand(t, 0, 0, flags | DC_NO_MODIFY_TOWN_RATING, CMD_LANDSCAPE_CLEAR);
+					Command<CMD_LANDSCAPE_CLEAR>::Do(flags | DC_NO_MODIFY_TOWN_RATING, t);
 				}
 			}
 		}
@@ -523,7 +525,7 @@ static CommandCost ClearTile_Object(TileIndex tile, DoCommandFlag flags)
 			}
 
 			/* cost of relocating company is 1% of company value */
-			cost = CommandCost(EXPENSES_PROPERTY, CalculateCompanyValue(c) / 100);
+			cost = CommandCost(EXPENSES_CONSTRUCTION, CalculateCompanyValue(c) / 100);
 			break;
 		}
 
@@ -772,7 +774,7 @@ void GenerateObjects()
 
 				default:
 					uint8 view = RandomRange(spec->views);
-					if (CmdBuildObject(RandomTile(), DC_EXEC | DC_AUTO | DC_NO_TEST_TOWN_RATING | DC_NO_MODIFY_TOWN_RATING, i, view, {}).Succeeded()) amount--;
+					if (CmdBuildObject(DC_EXEC | DC_AUTO | DC_NO_TEST_TOWN_RATING | DC_NO_MODIFY_TOWN_RATING, RandomTile(), i, view).Succeeded()) amount--;
 					break;
 			}
 		}
@@ -844,7 +846,7 @@ static CommandCost TerraformTile_Object(TileIndex tile, DoCommandFlag flags, int
 		}
 	}
 
-	return DoCommand(tile, 0, 0, flags, CMD_LANDSCAPE_CLEAR);
+	return Command<CMD_LANDSCAPE_CLEAR>::Do(flags, tile);
 }
 
 extern const TileTypeProcs _tile_type_object_procs = {

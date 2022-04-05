@@ -1152,10 +1152,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alpinista
 STR_TERRAIN_TYPE_CUSTOM                                         :Altura personalizada
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Altura personalizada ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Permissivo
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Tolerante
 STR_CITY_APPROVAL_HOSTILE                                       :Hostil
+STR_CITY_APPROVAL_PERMISSIVE                                    :Permissivo
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Não há IA compatíveis disponíveis...{}Você pode baixar várias IA's pelo sistema de 'Conteúdo Online'
 
@@ -1744,6 +1744,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Exibe um jornal
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Acidentes / desastres: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Exibir jornal quando acidentes ou desastres acontecem
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Acidentes de veículos dos competidores: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Mostrar um jornal sobre os acidentes de veículos dos competidores
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Informações da empresa: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Exibe um jornal quando uma companhia é aberta, ou quando estão próximas da bancarrota
 
@@ -2258,6 +2261,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Terreno
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Tamanho do mapa: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Versão do servidor: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}IP do servidor: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Código de convite: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Data de inicio: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Data atual: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Script de jogo: {WHITE}{STRING} (v{NUM})
@@ -2674,6 +2678,7 @@ STR_STATION_CLASS_WAYP                                          :Pontos de contr
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Seleção de Sinais
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Alternar se mostra os tipos de sinais avançados
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Sinais padrão (semáforos){}Sinais são necessários para impedir trens de colidirem nas malhas ferroviárias com mais de um trem
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Sinal de Entrada (semáforo){}Verde enquanto haja um ou mais sinais de saída verdes na atual seção dos trilhos. Do contrário, mostra vermelho
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Sinal de saída (semáforo){}Funciona como um sinal normal, porém é necessário para o funcionamento correto do sistema de pré-sinais combo ou de entrada
@@ -5552,5 +5557,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

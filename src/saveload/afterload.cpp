@@ -393,8 +393,8 @@ static void CDECL HandleSavegameLoadCrash(int signum)
 			"or older version.\n"
 			"It will load a NewGRF with the same GRF ID as the missing NewGRF.\n"
 			"This means that if the author makes incompatible NewGRFs with the\n"
-			"same GRF ID OpenTTD cannot magically do the right thing. In most\n"
-			"cases OpenTTD will load the savegame and not crash, but this is an\n"
+			"same GRF ID, OpenTTD cannot magically do the right thing. In most\n"
+			"cases, OpenTTD will load the savegame and not crash, but this is an\n"
 			"exception.\n"
 			"Please load the savegame with the appropriate NewGRFs installed.\n"
 			"The missing/compatible NewGRFs are:\n");
@@ -956,10 +956,6 @@ bool AfterLoadGame()
 			default: break;
 		}
 	}
-
-	/* In version 2.2 of the savegame, we have new airports, so status of all aircraft is reset.
-	 * This has to be called after the oilrig airport_type update above ^^^ ! */
-	if (IsSavegameVersionBefore(SLV_2, 2)) UpdateOldAircraft();
 
 	/* In version 6.1 we put the town index in the map-array. To do this, we need
 	 *  to use m2 (16bit big), so we need to clean m2, and that is where this is
@@ -1724,9 +1720,9 @@ bool AfterLoadGame()
 		for (Order *order : Order::Iterate()) order->ConvertFromOldSavegame();
 
 		for (Vehicle *v : Vehicle::Iterate()) {
-			if (v->orders.list != nullptr && v->orders.list->GetFirstOrder() != nullptr && v->orders.list->GetFirstOrder()->IsType(OT_NOTHING)) {
-				v->orders.list->FreeChain();
-				v->orders.list = nullptr;
+			if (v->orders != nullptr && v->orders->GetFirstOrder() != nullptr && v->orders->GetFirstOrder()->IsType(OT_NOTHING)) {
+				v->orders->FreeChain();
+				v->orders = nullptr;
 			}
 
 			v->current_order.ConvertFromOldSavegame();
@@ -1759,10 +1755,9 @@ bool AfterLoadGame()
 		 * 2) shares that are owned by inactive companies or self
 		 *     (caused by cheating clients in earlier revisions) */
 		for (Company *c : Company::Iterate()) {
-			for (uint i = 0; i < 4; i++) {
-				CompanyID company = c->share_owners[i];
-				if (company == INVALID_COMPANY) continue;
-				if (!Company::IsValidID(company) || company == c->index) c->share_owners[i] = INVALID_COMPANY;
+			for (auto &share_owner : c->share_owners) {
+				if (share_owner == INVALID_COMPANY) continue;
+				if (!Company::IsValidID(share_owner) || share_owner == c->index) share_owner = INVALID_COMPANY;
 			}
 		}
 	}
@@ -2899,6 +2894,10 @@ bool AfterLoadGame()
 		}
 	}
 
+	/* In version 2.2 of the savegame, we have new airports, so status of all aircraft is reset.
+	 * This has to be called after all map array updates */
+	if (IsSavegameVersionBefore(SLV_2, 2)) UpdateOldAircraft();
+
 	if (IsSavegameVersionBefore(SLV_188)) {
 		/* Fix articulated road vehicles.
 		 * Some curves were shorter than other curves.
@@ -3106,14 +3105,14 @@ bool AfterLoadGame()
 		}
 	}
 
-	if (IsSavegameVersionBeforeOrAt(SLV_ENDING_YEAR)) {
-		/* Update station docking tiles. Was only needed for pre-SLV_MULTITLE_DOCKS
-		 * savegames, but a bug in docking tiles touched all savegames between
-		 * SLV_MULTITILE_DOCKS and SLV_ENDING_YEAR. */
+	if (IsSavegameVersionBefore(SLV_REPAIR_OBJECT_DOCKING_TILES)) {
+		/* Placing objects on docking tiles was not updating adjacent station's docking tiles. */
 		for (Station *st : Station::Iterate()) {
 			if (st->ship_station.tile != INVALID_TILE) UpdateStationDockingTiles(st);
 		}
+	}
 
+	if (IsSavegameVersionBeforeOrAt(SLV_ENDING_YEAR)) {
 		/* Reset roadtype/streetcartype info for non-road bridges. */
 		for (TileIndex t = 0; t < map_size; t++) {
 			if (IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) != TRANSPORT_ROAD) {

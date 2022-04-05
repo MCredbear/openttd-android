@@ -25,7 +25,11 @@
 #include "hotkeys.h"
 #include "gui.h"
 #include "zoom_func.h"
-#include "build_confirmation_func.h"
+#include "tunnelbridge_cmd.h"
+#include "dock_cmd.h"
+#include "station_cmd.h"
+#include "water_cmd.h"
+#include "waypoint_cmd.h"
 
 #include "widgets/dock_widget.h"
 
@@ -39,7 +43,7 @@ static void ShowBuildDocksDepotPicker(Window *parent);
 
 static Axis _ship_depot_direction;
 
-void CcBuildDocks(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcBuildDocks(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Failed()) return;
 
@@ -47,7 +51,7 @@ void CcBuildDocks(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p
 	if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 }
 
-void CcPlaySound_CONSTRUCTION_WATER(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcPlaySound_CONSTRUCTION_WATER(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Succeeded() && _settings_client.sound.confirm) SndPlayTileFx(SND_02_CONSTRUCTION_WATER, tile);
 }
@@ -99,12 +103,11 @@ struct BuildDocksToolbarWindow : Window {
 		this->last_clicked_widget = WID_DT_INVALID;
 		this->InitNested(window_number);
 		this->OnInvalidateData();
-		if (_settings_client.gui.link_terraform_toolbar || _settings_client.gui.compact_vertical_toolbar) ShowTerraformToolbar();
+		if (_settings_client.gui.link_terraform_toolbar) ShowTerraformToolbar(this);
 	}
 
 	void Close() override
 	{
-		if (_thd.GetCallbackWnd() == this) this->OnPlaceObjectAbort();
 		if (_game_mode == GM_NORMAL && this->IsWidgetLowered(WID_DT_STATION)) SetViewportCatchmentStation(nullptr, true);
 		if (_settings_client.gui.link_terraform_toolbar) CloseWindowById(WC_SCEN_LAND_GEN, 0, false);
 		this->Window::Close();
@@ -160,7 +163,7 @@ struct BuildDocksToolbarWindow : Window {
 				break;
 
 			case WID_DT_DEPOT: // Build depot button
-				if (HandlePlacePushButton(this, WID_DT_DEPOT, SPR_CURSOR_SHIP_DEPOT, HT_RECT | HT_SCROLL_VIEWPORT)) ShowBuildDocksDepotPicker(this);
+				if (HandlePlacePushButton(this, WID_DT_DEPOT, SPR_CURSOR_SHIP_DEPOT, HT_RECT)) ShowBuildDocksDepotPicker(this);
 				break;
 
 			case WID_DT_STATION: // Build station button
@@ -168,7 +171,7 @@ struct BuildDocksToolbarWindow : Window {
 				break;
 
 			case WID_DT_BUOY: // Build buoy button
-				HandlePlacePushButton(this, WID_DT_BUOY, SPR_CURSOR_BUOY, HT_RECT | HT_SCROLL_VIEWPORT);
+				HandlePlacePushButton(this, WID_DT_BUOY, SPR_CURSOR_BUOY, HT_RECT);
 				break;
 
 			case WID_DT_RIVER: // Build river button (in scenario editor)
@@ -193,22 +196,37 @@ struct BuildDocksToolbarWindow : Window {
 				break;
 
 			case WID_DT_LOCK: // Build lock button
-				/* Reuse DDSP_REMOVE_TRUCKSTOP. */
-				VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_REMOVE_TRUCKSTOP);
+				Command<CMD_BUILD_LOCK>::Post(STR_ERROR_CAN_T_BUILD_LOCKS, CcBuildDocks, tile);
 				break;
 
 			case WID_DT_DEMOLISH: // Demolish aka dynamite button
 				PlaceProc_DemolishArea(tile);
 				break;
 
+			case WID_DT_DEPOT: // Build depot button
+				Command<CMD_BUILD_SHIP_DEPOT>::Post(STR_ERROR_CAN_T_BUILD_SHIP_DEPOT, CcBuildDocks, tile, _ship_depot_direction);
+				break;
+
 			case WID_DT_STATION: { // Build station button
-				VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_BUILD_STATION);
+				/* Determine the watery part of the dock. */
+				DiagDirection dir = GetInclinedSlopeDirection(GetTileSlope(tile));
+				TileIndex tile_to = (dir != INVALID_DIAGDIR ? TileAddByDiagDir(tile, ReverseDiagDir(dir)) : tile);
+
+				bool adjacent = _ctrl_pressed;
+				auto proc = [=](bool test, StationID to_join) -> bool {
+					if (test) {
+						return Command<CMD_BUILD_DOCK>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_DOCK>()), tile, INVALID_STATION, adjacent).Succeeded();
+					} else {
+						return Command<CMD_BUILD_DOCK>::Post(STR_ERROR_CAN_T_BUILD_DOCK_HERE, CcBuildDocks, tile, to_join, adjacent);
+					}
+				};
+
+				ShowSelectStationIfNeeded(TileArea(tile, tile_to), proc);
 				break;
 			}
 
-			case WID_DT_DEPOT: // Build depot button
 			case WID_DT_BUOY: // Build buoy button
-				VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_SINGLE_TILE);
+				Command<CMD_BUILD_BUOY>::Post(STR_ERROR_CAN_T_POSITION_BUOY_HERE, CcBuildDocks, tile);
 				break;
 
 			case WID_DT_RIVER: // Build river button (in scenario editor)
@@ -216,26 +234,16 @@ struct BuildDocksToolbarWindow : Window {
 				break;
 
 			case WID_DT_BUILD_AQUEDUCT: // Build aqueduct button
-				VpStartPlaceSizing(tile, VPM_SINGLE_TILE, DDSP_BUILD_BRIDGE);
+				Command<CMD_BUILD_BRIDGE>::Post(STR_ERROR_CAN_T_BUILD_AQUEDUCT_HERE, CcBuildBridge, tile, GetOtherAqueductEnd(tile), TRANSPORT_WATER, 0, 0);
 				break;
 
 			default: NOT_REACHED();
 		}
-		MoveAllWindowsOffScreen();
 	}
 
 	void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt) override
 	{
-		switch (last_clicked_widget) {
-			case WID_DT_BUILD_AQUEDUCT:
-			case WID_DT_LOCK:
-			case WID_DT_STATION:
-				this->OnPlacePresize(pt, TileVirtXY(pt.x, pt.y));
-				break;
-			default:
-				VpSelectTilesWithMethod(pt.x, pt.y, select_method);
-				break;
-		}
+		VpSelectTilesWithMethod(pt.x, pt.y, select_method);
 	}
 
 	void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile) override
@@ -246,51 +254,14 @@ struct BuildDocksToolbarWindow : Window {
 					GUIPlaceProcDragXY(select_proc, start_tile, end_tile);
 					break;
 				case DDSP_CREATE_WATER:
-					DoCommandP(end_tile, start_tile, (_game_mode == GM_EDITOR && _ctrl_pressed) ? WATER_CLASS_SEA : WATER_CLASS_CANAL, CMD_BUILD_CANAL | CMD_MSG(STR_ERROR_CAN_T_BUILD_CANALS), CcPlaySound_CONSTRUCTION_WATER);
+					Command<CMD_BUILD_CANAL>::Post(STR_ERROR_CAN_T_BUILD_CANALS, CcPlaySound_CONSTRUCTION_WATER, end_tile, start_tile, (_game_mode == GM_EDITOR && _ctrl_pressed) ? WATER_CLASS_SEA : WATER_CLASS_CANAL, false);
 					break;
 				case DDSP_CREATE_RIVER:
-					DoCommandP(end_tile, start_tile, WATER_CLASS_RIVER | (_ctrl_pressed ? 1 << 2 : 0), CMD_BUILD_CANAL | CMD_MSG(STR_ERROR_CAN_T_PLACE_RIVERS), CcPlaySound_CONSTRUCTION_WATER);
+					Command<CMD_BUILD_CANAL>::Post(STR_ERROR_CAN_T_PLACE_RIVERS, CcPlaySound_CONSTRUCTION_WATER, end_tile, start_tile, WATER_CLASS_RIVER, _ctrl_pressed);
 					break;
-				case DDSP_BUILD_STATION: {
-					uint32 p2 = (uint32)INVALID_STATION << 16; // no station to join
-
-					/* Tile is always the land tile, so need to evaluate _thd.pos. */
-					CommandContainer cmdcont = { start_tile, _ctrl_pressed, p2, CMD_BUILD_DOCK | CMD_MSG(STR_ERROR_CAN_T_BUILD_DOCK_HERE), CcBuildDocks, "" };
-
-					//SetObjectToPlace(SPR_CURSOR_DOCK, PAL_NONE, HT_SPECIAL, this->window_class, this->window_number);
-					ShowSelectStationIfNeeded(cmdcont, TileArea(start_tile, end_tile));
-					VpStartPreSizing();
-					break;
-				}
-
-				case DDSP_BUILD_BRIDGE:
-					DoCommandP(start_tile, GetOtherAqueductEnd(start_tile), TRANSPORT_WATER << 15, CMD_BUILD_BRIDGE | CMD_MSG(STR_ERROR_CAN_T_BUILD_AQUEDUCT_HERE), CcBuildBridge);
-					VpStartPreSizing();
-					break;
-
-				case DDSP_REMOVE_TRUCKSTOP: { // Reusing for locks.
-					TileIndex middle_tile = start_tile;
-					if (start_tile != end_tile) middle_tile = TileAddByDiagDir(start_tile, DiagdirBetweenTiles(start_tile, end_tile));
-					DoCommandP(middle_tile, 0, 0, CMD_BUILD_LOCK | CMD_MSG(STR_ERROR_CAN_T_BUILD_LOCKS), CcBuildDocks);
-					VpStartPreSizing();
-					break;
-				}
-
-				case DDSP_SINGLE_TILE:
-					assert(start_tile == end_tile);
-					switch (last_clicked_widget) {
-						case WID_DT_BUOY:
-							DoCommandP(end_tile, 0, 0, CMD_BUILD_BUOY | CMD_MSG(STR_ERROR_CAN_T_POSITION_BUOY_HERE), CcBuildDocks);
-							break;
-						case WID_DT_DEPOT: // Build depot button
-							DoCommandP(end_tile, _ship_depot_direction, 0, CMD_BUILD_SHIP_DEPOT | CMD_MSG(STR_ERROR_CAN_T_BUILD_SHIP_DEPOT), CcBuildDocks);
-							break;
-						default: NOT_REACHED();
-					}
 
 				default: break;
 			}
-			MoveAllHiddenWindowsBackToScreen();
 		}
 	}
 
@@ -298,29 +269,16 @@ struct BuildDocksToolbarWindow : Window {
 	{
 		if (_game_mode != GM_EDITOR && this->IsWidgetLowered(WID_DT_STATION)) SetViewportCatchmentStation(nullptr, true);
 
-		MoveAllHiddenWindowsBackToScreen();
 		this->RaiseButtons();
 
-		if (ConfirmationWindowShown() && _ctrl_pressed) return;
 		CloseWindowById(WC_BUILD_STATION, TRANSPORT_WATER);
 		CloseWindowById(WC_BUILD_DEPOT, TRANSPORT_WATER);
 		CloseWindowById(WC_SELECT_STATION, 0);
 		CloseWindowByClass(WC_BUILD_BRIDGE);
 	}
 
-	void SelectLastTool() override
-	{
-		// User misplaced something - activate last selected tool again
-		if (this->last_clicked_widget == WID_DT_INVALID)
-			return;
-		Point dummy = {0, 0};
-		this->RaiseWidget(this->last_clicked_widget);
-		this->OnClick(dummy, this->last_clicked_widget, 0);
-	}
-
 	void OnPlacePresize(Point pt, TileIndex tile_from) override
 	{
-		if (!IsValidTile(tile_from)) return;
 		TileIndex tile_to = tile_from;
 
 		if (this->last_clicked_widget == WID_DT_BUILD_AQUEDUCT) {
@@ -410,7 +368,7 @@ Window *ShowBuildDocksToolbar()
 {
 	if (!Company::IsValidID(_local_company)) return nullptr;
 
-	CloseToolbarLinkedWindows();
+	CloseWindowByClass(WC_BUILD_TOOLBAR);
 	return AllocateWindowDescFront<BuildDocksToolbarWindow>(&_build_docks_toolbar_desc, TRANSPORT_WATER);
 }
 
@@ -436,7 +394,7 @@ static const NWidgetPart _nested_build_docks_scen_toolbar_widgets[] = {
 
 /** Window definition for the build docks in scenario editor window. */
 static WindowDesc _build_docks_scen_toolbar_desc(
-	WDP_ALIGN_TOOLBAR, "toolbar_water_scen", 0, 0,
+	WDP_AUTO, "toolbar_water_scen", 0, 0,
 	WC_SCEN_BUILD_TOOLBAR, WC_NONE,
 	WDF_CONSTRUCTION,
 	_nested_build_docks_scen_toolbar_widgets, lengthof(_nested_build_docks_scen_toolbar_widgets)
@@ -449,7 +407,6 @@ static WindowDesc _build_docks_scen_toolbar_desc(
  */
 Window *ShowBuildDocksScenToolbar()
 {
-	CloseToolbarLinkedWindows();
 	return AllocateWindowDescFront<BuildDocksToolbarWindow>(&_build_docks_scen_toolbar_desc, TRANSPORT_WATER);
 }
 
@@ -622,10 +579,10 @@ static const NWidgetPart _nested_build_docks_depot_widgets[] = {
 		NWidget(NWID_SPACER), SetMinimalSize(0, 3),
 		NWidget(NWID_HORIZONTAL_LTR),
 			NWidget(NWID_SPACER), SetMinimalSize(3, 0),
-			NWidget(WWT_PANEL, COLOUR_GREY, WID_BDD_X), SetSizingType(NWST_BUTTON), SetMinimalSize(98, 66), SetDataTip(0x0, STR_DEPOT_BUILD_SHIP_ORIENTATION_TOOLTIP),
+			NWidget(WWT_PANEL, COLOUR_GREY, WID_BDD_X), SetMinimalSize(98, 66), SetDataTip(0x0, STR_DEPOT_BUILD_SHIP_ORIENTATION_TOOLTIP),
 			EndContainer(),
 			NWidget(NWID_SPACER), SetMinimalSize(2, 0),
-			NWidget(WWT_PANEL, COLOUR_GREY, WID_BDD_Y), SetSizingType(NWST_BUTTON), SetMinimalSize(98, 66), SetDataTip(0x0, STR_DEPOT_BUILD_SHIP_ORIENTATION_TOOLTIP),
+			NWidget(WWT_PANEL, COLOUR_GREY, WID_BDD_Y), SetMinimalSize(98, 66), SetDataTip(0x0, STR_DEPOT_BUILD_SHIP_ORIENTATION_TOOLTIP),
 			EndContainer(),
 			NWidget(NWID_SPACER), SetMinimalSize(3, 0),
 		EndContainer(),

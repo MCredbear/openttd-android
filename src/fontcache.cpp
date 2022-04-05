@@ -279,7 +279,7 @@ void TrueTypeFontCache::SetGlyphPtr(GlyphID key, const GlyphEntry *glyph, bool d
 static bool GetFontAAState(FontSize size, bool check_blitter = true)
 {
 	/* AA is only supported for 32 bpp */
-	if (check_blitter && BlitterFactory::GetCurrentBlitter()->GetScreenDepth() != 32 && BlitterFactory::GetCurrentBlitter()->GetScreenDepth() != 16) return false;
+	if (check_blitter && BlitterFactory::GetCurrentBlitter()->GetScreenDepth() != 32) return false;
 
 	switch (size) {
 		default: NOT_REACHED();
@@ -561,7 +561,7 @@ static void LoadFreeTypeFont(FontSize fs)
 	return;
 
 found_face:
-	new FreeTypeFontCache(fs, face, RescaleFrom854x480(settings->size));
+	new FreeTypeFontCache(fs, face, settings->size);
 }
 
 

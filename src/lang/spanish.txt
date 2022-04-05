@@ -32,7 +32,7 @@ STR_CARGO_PLURAL_MAIL                                           :{G=m}Correo
 STR_CARGO_PLURAL_OIL                                            :{G=m}Petróleo
 STR_CARGO_PLURAL_LIVESTOCK                                      :{G=m}Ganado
 STR_CARGO_PLURAL_GOODS                                          :{G=f}Mercancías
-STR_CARGO_PLURAL_GRAIN                                          :{G=m}Grano
+STR_CARGO_PLURAL_GRAIN                                          :{G=m}Cereal
 STR_CARGO_PLURAL_WOOD                                           :{G=f}Madera
 STR_CARGO_PLURAL_IRON_ORE                                       :{G=m}Mineral de Hierro
 STR_CARGO_PLURAL_STEEL                                          :{G=m}Acero
@@ -66,7 +66,7 @@ STR_CARGO_SINGULAR_MAIL                                         :{G=m}Correo
 STR_CARGO_SINGULAR_OIL                                          :{G=m}Petróleo
 STR_CARGO_SINGULAR_LIVESTOCK                                    :{G=m}Ganado
 STR_CARGO_SINGULAR_GOODS                                        :{G=f}Mercancía
-STR_CARGO_SINGULAR_GRAIN                                        :{G=m}Grano
+STR_CARGO_SINGULAR_GRAIN                                        :{G=m}Cereal
 STR_CARGO_SINGULAR_WOOD                                         :{G=f}Madera
 STR_CARGO_SINGULAR_IRON_ORE                                     :{G=m}Mineral de Hierro
 STR_CARGO_SINGULAR_STEEL                                        :{G=m}Acero
@@ -100,7 +100,7 @@ STR_QUANTITY_MAIL                                               :{COMMA}{NBSP}bo
 STR_QUANTITY_OIL                                                :{VOLUME_LONG} de petróleo
 STR_QUANTITY_LIVESTOCK                                          :{COMMA}{NBSP}cabeza{P "" s} de ganado
 STR_QUANTITY_GOODS                                              :{COMMA}{NBSP}caja{P "" s} de mercancías
-STR_QUANTITY_GRAIN                                              :{WEIGHT_LONG} de grano
+STR_QUANTITY_GRAIN                                              :{WEIGHT_LONG} de cereal
 STR_QUANTITY_WOOD                                               :{WEIGHT_LONG} de madera
 STR_QUANTITY_IRON_ORE                                           :{WEIGHT_LONG} de mineral de hierro
 STR_QUANTITY_STEEL                                              :{WEIGHT_LONG} de acero
@@ -902,7 +902,7 @@ STR_NEWS_SUBSIDY_WITHDRAWN_SERVICE                              :{BIG_FONT}{BLAC
 STR_NEWS_SERVICE_SUBSIDY_OFFERED                                :{BIG_FONT}{BLACK}Se ofrece subvención:{}{}¡Al primer servicio de {STRING} que cubra la línea desde {STRING} a {STRING} se le otorgará una subvención durante {NUM} año{P "" s} por parte de las autoridades locales!
 ###length 4
 STR_NEWS_SERVICE_SUBSIDY_AWARDED_HALF                           :{BIG_FONT}{BLACK}¡Subvención otorgada a {STRING}!{}{}¡El servicio de {STRING} desde {STRING} a {STRING} se pagará un 50% más caro durante {NUM} año{P "" s}!
-STR_NEWS_SERVICE_SUBSIDY_AWARDED_DOUBLE                         :{BIG_FONT}{BLACK}¡Subvención otorgada a {STRING}!{}{}¡El servicio de {STRING} desde {STRING} a {STRING} se pagará a tarifa doble durante los próximos {NUM} año{P "" s}!
+STR_NEWS_SERVICE_SUBSIDY_AWARDED_DOUBLE                         :{BIG_FONT}{BLACK}¡Subvención otorgada a {STRING}!{}{}¡El transporte de {STRING} desde {STRING} a {STRING} se pagará a tarifa doble durante los próximos {NUM} año{P "" s}!
 STR_NEWS_SERVICE_SUBSIDY_AWARDED_TRIPLE                         :{BIG_FONT}{BLACK}¡Subvención otorgada a {STRING}!{}{}¡El servicio de {STRING} desde {STRING} a {STRING} se pagará a tarifa triple durante {NUM} año{P "" s}!
 STR_NEWS_SERVICE_SUBSIDY_AWARDED_QUADRUPLE                      :{BIG_FONT}{BLACK}¡Subvención otorgada a {STRING}!{}{}¡El servicio de {STRING} desde {STRING} a {STRING} se pagará a tarifa cuádruple durante {NUM} año{P "" s}!
 
@@ -1152,10 +1152,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alpino
 STR_TERRAIN_TYPE_CUSTOM                                         :Altura personalizada
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Altura personalizada ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Permisiva
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Tolerante
 STR_CITY_APPROVAL_HOSTILE                                       :Hostil
+STR_CITY_APPROVAL_PERMISSIVE                                    :Permisiva
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}No se han encontrado IA apropiadas...{}Puedes descargar IA a través del sistema de 'Contenido Online'
 
@@ -1744,6 +1744,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Mostrar una not
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Accidentes / desastres: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Mostrar noticias cuando ocurre un accidente o un desastre
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Accidentes de vehículos de competidores: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Muestra una noticia sobre los vehículos siniestrados de los competidores
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Información de la empresa: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Mostrar una noticia cuando se crea una nueva compañía, o cuando alguna compañía está en riesgo de quiebra
 
@@ -2258,6 +2261,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Terreno
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Tamaño del Mapa: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Versión del servidor: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Dirección del servidor: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Código de invitación: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Fecha de inicio: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Fecha actual: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Script de juego: {WHITE}{STRING} (v{NUM})
@@ -2351,9 +2355,9 @@ STR_NETWORK_CLIENT_LIST_PLAYER_NAME_QUERY_CAPTION               :Tu nombre de ju
 STR_NETWORK_CLIENT_LIST_ADMIN_CLIENT_TOOLTIP                    :{BLACK}Acciones de administrador a realizar para este cliente
 STR_NETWORK_CLIENT_LIST_ADMIN_COMPANY_TOOLTIP                   :{BLACK}Acciones de administrador a realizar para esta empresa
 STR_NETWORK_CLIENT_LIST_JOIN_TOOLTIP                            :{BLACK}Unirse a esta empresa
-STR_NETWORK_CLIENT_LIST_CHAT_CLIENT_TOOLTIP                     :{BLACK}Manda un mensaje a este jugador
-STR_NETWORK_CLIENT_LIST_CHAT_COMPANY_TOOLTIP                    :{BLACK}Manda un mensaje a todos los jugadores de esta empresa
-STR_NETWORK_CLIENT_LIST_CHAT_SPECTATOR_TOOLTIP                  :{BLACK}Manda un mensaje a todos los observadores
+STR_NETWORK_CLIENT_LIST_CHAT_CLIENT_TOOLTIP                     :{BLACK}Envía un mensaje a este jugador
+STR_NETWORK_CLIENT_LIST_CHAT_COMPANY_TOOLTIP                    :{BLACK}Envía un mensaje a todos los jugadores de esta empresa
+STR_NETWORK_CLIENT_LIST_CHAT_SPECTATOR_TOOLTIP                  :{BLACK}Envía un mensaje a todos los observadores
 STR_NETWORK_CLIENT_LIST_SPECTATORS                              :Observadores
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Nueva empresa)
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Crea una nueva empresa y te une a ella
@@ -2674,6 +2678,7 @@ STR_STATION_CLASS_WAYP                                          :Puntos de ruta
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Selección de Señales
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Muestra/Oculta las imágenes avanzadas
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Señal de bloque (mecánica){}Es el tipo de señal más básico, que permite a un único tren estar a la vez en el mismo bloque
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Señal de entrada (mecánica){}En verde si existen una o más señales en verde en el siguiente segmento de vía; de lo contrario, estará en rojo
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Señal de salida (mecánica){}Se comporta de la misma manera que una señal de bloque, pero es necesaria para activar el color correcto en las señales de entrada y combo
@@ -5193,9 +5198,9 @@ STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COAL_CAR                      :Vagón de Carb�
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_OIL_TANKER                    :Cisterna de Petróleo
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_LIVESTOCK_VAN                 :Vagón de Ganado
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_GOODS_VAN                     :Vagón de Mercancías
-STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_GRAIN_HOPPER                  :Vagoneta de Grano
+STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_GRAIN_HOPPER                  :Tolva de Cereal
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_WOOD_TRUCK                    :Vagón de Madera
-STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_IRON_ORE_HOPPER               :Vagoneta de Mineral de Hierro
+STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_IRON_ORE_HOPPER               :Tolva de Mineral de Hierro
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_STEEL_TRUCK                   :Vagón de Acero
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_ARMORED_VAN                   :Vagón Blindado
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_FOOD_VAN                      :Vagón de Alimentos
@@ -5206,7 +5211,7 @@ STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_FRUIT_TRUCK                   :Vagón de Fruta
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_RUBBER_TRUCK                  :Vagón de Caucho
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_SUGAR_TRUCK                   :Vagón de Azúcar
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COTTON_CANDY_HOPPER           :Vagón tolva de Algodón de Azúcar
-STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_TOFFEE_HOPPER                 :Vagoneta de Tofe
+STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_TOFFEE_HOPPER                 :Tolva de Tofe
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_BUBBLE_VAN                    :Vagón de Burbujas
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COLA_TANKER                   :Cisterna de Cola
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_CANDY_VAN                     :Vagón de Caramelos
@@ -5223,9 +5228,9 @@ STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COAL_CAR                  :Vagón de Carb�
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_OIL_TANKER                :Cisterna de Petróleo
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_LIVESTOCK_VAN             :Vagón de Ganado
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_GOODS_VAN                 :Vagón de Mercancías
-STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_GRAIN_HOPPER              :Vagoneta de Grano
+STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_GRAIN_HOPPER              :Tolva de Cereal
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_WOOD_TRUCK                :Vagón de Madera
-STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_IRON_ORE_HOPPER           :Vagoneta de Mineral de Hierro
+STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_IRON_ORE_HOPPER           :Tolva de Mineral de Hierro
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_STEEL_TRUCK               :Vagón de Acero
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_ARMORED_VAN               :Vagón Blindado
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_FOOD_VAN                  :Vagón de Alimentos
@@ -5236,7 +5241,7 @@ STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_FRUIT_TRUCK               :Vagón de Fruta
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_RUBBER_TRUCK              :Vagón de Caucho
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_SUGAR_TRUCK               :Vagón de Azúcar
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COTTON_CANDY_HOPPER       :Vagón tolva de Algodón de Azúcar
-STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_TOFFEE_HOPPER             :Vagoneta de Tofe
+STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_TOFFEE_HOPPER             :Tolva de Tofe
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_BUBBLE_VAN                :Vagón de Burbujas
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COLA_TANKER               :Cisterna de Cola
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_CANDY_VAN                 :Vagón de Caramelos
@@ -5255,9 +5260,9 @@ STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_COAL_CAR                    :Vagón de Carb�
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_OIL_TANKER                  :Cisterna de Petróleo
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_LIVESTOCK_VAN               :Vagón de Ganado
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_GOODS_VAN                   :Vagón de Mercancías
-STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_GRAIN_HOPPER                :Vagoneta de Grano
+STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_GRAIN_HOPPER                :Tolva de Cereal
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_WOOD_TRUCK                  :Vagón de Madera
-STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_IRON_ORE_HOPPER             :Vagoneta de Mineral de Hierro
+STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_IRON_ORE_HOPPER             :Tolva de Mineral de Hierro
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_STEEL_TRUCK                 :Vagón de Acero
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_ARMORED_VAN                 :Vagón Blindado
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_FOOD_VAN                    :Vagón de Alimentos
@@ -5303,9 +5308,9 @@ STR_VEHICLE_NAME_ROAD_VEHICLE_FOSTER_LIVESTOCK_VAN              :Camión de Gana
 STR_VEHICLE_NAME_ROAD_VEHICLE_BALOGH_GOODS_TRUCK                :Camión de Mercancías Balogh
 STR_VEHICLE_NAME_ROAD_VEHICLE_CRAIGHEAD_GOODS_TRUCK             :Camión de Mercancías Craighead
 STR_VEHICLE_NAME_ROAD_VEHICLE_GOSS_GOODS_TRUCK                  :Camión de Mercancías Goss
-STR_VEHICLE_NAME_ROAD_VEHICLE_HEREFORD_GRAIN_TRUCK              :Camión de Grano Hereford
-STR_VEHICLE_NAME_ROAD_VEHICLE_THOMAS_GRAIN_TRUCK                :Camión de Grano Thomas
-STR_VEHICLE_NAME_ROAD_VEHICLE_GOSS_GRAIN_TRUCK                  :Camión de Grano Goss
+STR_VEHICLE_NAME_ROAD_VEHICLE_HEREFORD_GRAIN_TRUCK              :Camión de Cereal Hereford
+STR_VEHICLE_NAME_ROAD_VEHICLE_THOMAS_GRAIN_TRUCK                :Camión de Cereal Thomas
+STR_VEHICLE_NAME_ROAD_VEHICLE_GOSS_GRAIN_TRUCK                  :Camión de Cereal Goss
 STR_VEHICLE_NAME_ROAD_VEHICLE_WITCOMBE_WOOD_TRUCK               :Camión Maderero Witcombe
 STR_VEHICLE_NAME_ROAD_VEHICLE_FOSTER_WOOD_TRUCK                 :Camión Maderero Foster
 STR_VEHICLE_NAME_ROAD_VEHICLE_MORELAND_WOOD_TRUCK               :Camión Maderero Moreland
@@ -5552,5 +5557,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

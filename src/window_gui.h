@@ -142,7 +142,7 @@ enum WidgetDrawDistances {
 
 /* widget.cpp */
 void DrawFrameRect(int left, int top, int right, int bottom, Colours colour, FrameFlags flags);
-void DrawCaption(const Rect &r, Colours colour, Owner owner, TextColour text_colour, StringID str, StringAlignment align, const NWidgetCore *widget, const Window *window);
+void DrawCaption(const Rect &r, Colours colour, Owner owner, TextColour text_colour, StringID str, StringAlignment align);
 
 /* window.cpp */
 using WindowList = std::list<Window *>;
@@ -760,10 +760,6 @@ public:
 	 */
 	virtual void OnPlaceObjectAbort() {}
 
-	/**
-	 * Select the cancelled tool again, this is called after OnPlaceObjectAbort()
-	 */
-	virtual void SelectLastTool() {}
 
 	/**
 	 * The user is dragging over the map when the tile highlight mode
@@ -949,8 +945,6 @@ Wcls *AllocateWindowDescFront(WindowDesc *desc, int window_number, bool return_e
 }
 
 void RelocateAllWindows(int neww, int newh);
-void MoveAllWindowsOffScreen();
-void MoveAllHiddenWindowsBackToScreen();
 
 void GuiShowTooltips(Window *parent, StringID str, uint paramcount = 0, const uint64 params[] = nullptr, TooltipCloseCondition close_tooltip = TCC_HOVER);
 
@@ -961,11 +955,7 @@ extern Point _cursorpos_drag_start;
 
 extern int _scrollbar_start_pos;
 extern int _scrollbar_size;
-extern bool _scrollbar_finger_drag;
 extern byte _scroller_click_timeout;
-enum {
-	SCROLLER_CLICK_DELAY = 6 ///< Delay in video frames between scrollbar doing scroll, we don't want to get to the bottom of the list in an instant
-};
 
 extern bool _scrolling_viewport;
 extern bool _mouse_hovering;
@@ -983,7 +973,5 @@ extern SpecialMouseMode _special_mouse_mode;
 void SetFocusedWindow(Window *w);
 
 void ScrollbarClickHandler(Window *w, NWidgetCore *nw, int x, int y);
-
-bool GetWindowDraggedOffScreen(const Window *w); ///< Return whether window is dragged off screen edge and about to close, for no-titlebars mode
 
 #endif /* WINDOW_GUI_H */

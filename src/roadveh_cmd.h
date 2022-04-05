@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -7,17 +5,19 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file build_confirmation_widget.h Types related to the build_confirmation widgets. */
+/** @file roadveh_cmd.h Command definitions related to road vehicles. */
 
-#ifndef WIDGETS_BUILD_CONFIRMATION_WIDGET_H
-#define WIDGETS_BUILD_CONFIRMATION_WIDGET_H
+#ifndef ROADVEH_CMD_H
+#define ROADVEH_CMD_H
 
-/** Widgets of the #BuildVehicleWindow class. */
-enum BuildConfirmationWidgets {
-	WID_BC_PRICE,                     ///< Estimated price.
-	WID_BC_OK,                        ///< Confirm action.
-	WID_BC_CANCEL,                    ///< Cancel action.
-	WID_BC_PANEL,                     ///< Cancel action.
-};
+#include "command_type.h"
+#include "engine_type.h"
+#include "vehicle_type.h"
 
-#endif /* WIDGETS_BUILD_CONFIRMATION_WIDGET_H */
+CommandCost CmdBuildRoadVehicle(DoCommandFlag flags, TileIndex tile, const Engine *e, Vehicle **v);
+
+CommandCost CmdTurnRoadVeh(DoCommandFlag flags, VehicleID veh_id);
+
+DEF_CMD_TRAIT(CMD_TURN_ROADVEH, CmdTurnRoadVeh, 0, CMDT_VEHICLE_MANAGEMENT)
+
+#endif /* ROADVEH_CMD_H */

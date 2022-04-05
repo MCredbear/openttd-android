@@ -2009,7 +2009,7 @@ const char *GetCurrentLanguageIsoCode()
  * Check whether there are glyphs missing in the current language.
  * @return If glyphs are missing, return \c true, else return \c false.
  */
-int MissingGlyphSearcher::FindMissingGlyphs()
+bool MissingGlyphSearcher::FindMissingGlyphs()
 {
 	InitFreeType(this->Monospace());
 	const Sprite *question_mark[FS_END];
@@ -2019,7 +2019,6 @@ int MissingGlyphSearcher::FindMissingGlyphs()
 	}
 
 	this->Reset();
-	int missing = 0;
 	for (const char *text = this->NextString(); text != nullptr; text = this->NextString()) {
 		FontSize size = this->DefaultSize();
 		for (WChar c = Utf8Consume(&text); c != '\0'; c = Utf8Consume(&text)) {
@@ -2028,24 +2027,21 @@ int MissingGlyphSearcher::FindMissingGlyphs()
 			} else if (!IsInsideMM(c, SCC_SPRITE_START, SCC_SPRITE_END) && IsPrintable(c) && !IsTextDirectionChar(c) && c != '?' && GetGlyph(size, c) == question_mark[size]) {
 				/* The character is printable, but not in the normal font. This is the case we were testing for. */
 				std::string size_name;
-				std::string font_name;
-				char char_name[5] = {0};
-				Utf8Encode(char_name, c);
 
 				switch (size) {
-					case 0: size_name = "medium"; font_name = _freetype.medium.font; break;
-					case 1: size_name = "small";  font_name = _freetype.small.font;  break;
-					case 2: size_name = "large";  font_name = _freetype.large.font;  break;
-					case 3: size_name = "mono";   font_name = _freetype.mono.font;   break;
+					case 0: size_name = "medium"; break;
+					case 1: size_name = "small"; break;
+					case 2: size_name = "large"; break;
+					case 3: size_name = "mono"; break;
 					default: NOT_REACHED();
 				}
 
-				//Debug(freetype, 0, "Font is missing glyphs to display char 0x{:X} in {} font size", (int)c, size_name);
-				missing++;
+				Debug(freetype, 0, "Font is missing glyphs to display char 0x{:X} in {} font size", (int)c, size_name);
+				return true;
 			}
 		}
 	}
-	return missing;
+	return false;
 }
 
 /** Helper for searching through the language pack. */
@@ -2120,6 +2116,7 @@ void CheckForMissingGlyphs(bool base_font, MissingGlyphSearcher *searcher)
 	if (bad_font) {
 		/* We found an unprintable character... lets try whether we can find
 		 * a fallback font that can print the characters in the current language. */
+		bool any_font_configured = !_freetype.medium.font.empty();
 		FreeTypeSettings backup = _freetype;
 
 		_freetype.mono.os_handle = nullptr;
@@ -2129,19 +2126,17 @@ void CheckForMissingGlyphs(bool base_font, MissingGlyphSearcher *searcher)
 
 		_freetype = backup;
 
-		if (!bad_font) {
-			/* Show that we loaded fallback font. To do this properly we have
-			 * to set the colour of the string, otherwise we end up with a lot
-			 * of artifacts.* The colour 'character' might change in the
+		if (!bad_font && any_font_configured) {
+			/* If the user configured a bad font, and we found a better one,
+			 * show that we loaded the better font instead of the configured one.
+			 * The colour 'character' might change in the
 			 * future, so for safety we just Utf8 Encode it into the string,
 			 * which takes exactly three characters, so it replaces the "XXX"
 			 * with the colour marker. */
-#if !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
 			static char *err_str = stredup("XXXThe current font is missing some of the characters used in the texts for this language. Using system fallback font instead.");
 			Utf8Encode(err_str, SCC_YELLOW);
 			SetDParamStr(0, err_str);
 			ShowErrorMessage(STR_JUST_RAW_STRING, INVALID_STRING_ID, WL_WARNING);
-#endif
 		}
 
 		if (bad_font && base_font) {

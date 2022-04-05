@@ -314,13 +314,12 @@ static NWidgetBase *MakeZxcvbKeys(int *biggest_index)
 static NWidgetBase *MakeSpacebarKeys(int *biggest_index)
 {
 	NWidgetHorizontal *hor = new NWidgetHorizontal();
-	int key_height = FONT_HEIGHT_NORMAL + 6;
 
-	AddKey(hor, key_height,  8, NWID_SPACER, 0, 0, biggest_index);
-	AddKey(hor, key_height, 13, WWT_PUSHTXTBTN, WID_OSK_SPACE, STR_EMPTY, biggest_index);
-	AddKey(hor, key_height,  3, NWID_SPACER, 0, 0, biggest_index);
-	AddKey(hor, key_height,  2, WWT_PUSHIMGBTN, WID_OSK_LEFT,  SPR_OSK_LEFT, biggest_index);
-	AddKey(hor, key_height,  2, WWT_PUSHIMGBTN, WID_OSK_RIGHT, SPR_OSK_RIGHT, biggest_index);
+	AddKey(hor, KEY_PADDING,  8, NWID_SPACER, 0, 0, biggest_index);
+	AddKey(hor, KEY_PADDING, 13, WWT_PUSHTXTBTN, WID_OSK_SPACE, STR_EMPTY, biggest_index);
+	AddKey(hor, KEY_PADDING,  3, NWID_SPACER, 0, 0, biggest_index);
+	AddKey(hor, KEY_PADDING,  2, WWT_PUSHIMGBTN, WID_OSK_LEFT,  SPR_OSK_LEFT, biggest_index);
+	AddKey(hor, KEY_PADDING,  2, WWT_PUSHIMGBTN, WID_OSK_RIGHT, SPR_OSK_RIGHT, biggest_index);
 	return hor;
 }
 

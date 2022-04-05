@@ -402,7 +402,6 @@ NWidgetBase *MakeCargoesLegendLinkGraphGUI(int *biggest_index)
 			row = new NWidgetHorizontal(NC_EQUALSIZE);
 		}
 		NWidgetBackground * wid = new NWidgetBackground(WWT_PANEL, COLOUR_GREY, i + WID_LGL_CARGO_FIRST);
-		wid->sizing_type = NWST_BUTTON;
 		wid->SetMinimalSize(25, 0);
 		wid->SetMinimalTextLines(1, 0, FS_SMALL);
 		wid->SetFill(1, 1);

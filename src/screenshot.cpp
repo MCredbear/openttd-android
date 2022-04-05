@@ -12,6 +12,7 @@
 #include "viewport_func.h"
 #include "gfx_func.h"
 #include "screenshot.h"
+#include "screenshot_gui.h"
 #include "blitter/factory.hpp"
 #include "zoom_func.h"
 #include "core/endian_func.hpp"
@@ -37,7 +38,7 @@ static const char * const HEIGHTMAP_NAME  = "heightmap";  ///< Default filename 
 std::string _screenshot_format_name;  ///< Extension of the current screenshot format (corresponds with #_cur_screenshot_format).
 uint _num_screenshot_formats;         ///< Number of available screenshot formats.
 uint _cur_screenshot_format;          ///< Index of the currently selected screenshot format in #_screenshot_formats.
-static char _screenshot_name[256];    ///< Filename of the screenshot file.
+static char _screenshot_name[128];    ///< Filename of the screenshot file.
 char _full_screenshot_name[MAX_PATH]; ///< Pathname of the screenshot file.
 uint _heightmap_highest_peak;         ///< When saving a heightmap, this contains the highest peak on the map.
 
@@ -269,8 +270,7 @@ static bool MakePNGImage(const char *name, ScreenshotCallback *callb, void *user
 	png_infop info_ptr;
 
 	/* only implemented for 8bit and 32bit images so far. */
-	if (pixelformat != 8 && pixelformat != 32 && pixelformat != 16) return false;
-	if (pixelformat == 16) bpp = 3;
+	if (pixelformat != 8 && pixelformat != 32) return false;
 
 	f = fopen(name, "wb");
 	if (f == nullptr) return false;
@@ -585,7 +585,7 @@ void InitializeScreenshotFormats()
 {
 	uint j = 0;
 	for (uint i = 0; i < lengthof(_screenshot_formats); i++) {
-		if (_screenshot_format_name.compare(_screenshot_formats[i].extension) != 0) {
+		if (_screenshot_format_name.compare(_screenshot_formats[i].extension) == 0) {
 			j = i;
 			break;
 		}
@@ -910,8 +910,10 @@ static bool RealMakeScreenshot(ScreenshotType t, std::string name, uint32 width,
 		 * of the screenshot. This way the screenshot will always show the name
 		 * of the previous screenshot in the 'successful' message instead of the
 		 * name of the new screenshot (or an empty name). */
+		SetScreenshotWindowVisibility(true);
 		UndrawMouseCursor();
 		DrawDirtyBlocks();
+		SetScreenshotWindowVisibility(false);
 	}
 
 	_screenshot_name[0] = '\0';
@@ -957,7 +959,7 @@ static bool RealMakeScreenshot(ScreenshotType t, std::string name, uint32 width,
 			ShowErrorMessage(STR_MESSAGE_HEIGHTMAP_SUCCESSFULLY, INVALID_STRING_ID, WL_WARNING);
 		} else {
 			SetDParamStr(0, _screenshot_name);
-			// ShowErrorMessage(STR_MESSAGE_SCREENSHOT_SUCCESSFULLY, INVALID_STRING_ID, WL_WARNING); // No need for message when we're doing cloudsave
+			ShowErrorMessage(STR_MESSAGE_SCREENSHOT_SUCCESSFULLY, INVALID_STRING_ID, WL_WARNING);
 		}
 	} else {
 		ShowErrorMessage(STR_ERROR_SCREENSHOT_FAILED, INVALID_STRING_ID, WL_ERROR);

@@ -43,7 +43,6 @@
 #include "gfx_type.h"
 #include "strings_type.h"
 #include "string_type.h"
-#include "core/math_func.hpp"
 
 void GameLoop();
 
@@ -55,14 +54,12 @@ extern byte _support8bpp;
 extern CursorVars _cursor;
 extern bool _ctrl_pressed;   ///< Is Ctrl pressed?
 extern bool _shift_pressed;  ///< Is Shift pressed?
-extern bool _move_pressed;
 extern uint16 _game_speed;
 
 extern bool _left_button_down;
 extern bool _left_button_clicked;
 extern bool _right_button_down;
 extern bool _right_button_clicked;
-extern Point _right_button_down_pos;
 
 extern DrawPixelInfo _screen;
 extern bool _screen_disable_anim;   ///< Disable palette animation (important for 32bpp-anim blitter during giant screenshot)
@@ -94,10 +91,7 @@ void GfxScroll(int left, int top, int width, int height, int xo, int yo);
 Dimension GetSpriteSize(SpriteID sprid, Point *offset = nullptr, ZoomLevel zoom = ZOOM_LVL_GUI);
 void DrawSpriteViewport(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub = nullptr);
 void DrawSprite(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub = nullptr, ZoomLevel zoom = ZOOM_LVL_GUI);
-std::unique_ptr<uint32[]> DrawSpriteToRgbaBuffer(SpriteID spriteId);
-void DrawSpriteCentered(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub = nullptr, ZoomLevel zoom = ZOOM_LVL_GUI);
-void DrawSpriteCenteredRect(SpriteID img, PaletteID pal, int left, int top, int right, int bottom, const SubSprite *sub = nullptr, ZoomLevel zoom = ZOOM_LVL_GUI);
-void DrawSpriteCenteredRect(SpriteID img, PaletteID pal, const Rect &r, const SubSprite *sub = nullptr, ZoomLevel zoom = ZOOM_LVL_GUI);
+std::unique_ptr<uint32[]> DrawSpriteToRgbaBuffer(SpriteID spriteId, ZoomLevel zoom = ZOOM_LVL_GUI);
 
 int DrawString(int left, int right, int top, const char *str, TextColour colour = TC_FROMSTRING, StringAlignment align = SA_LEFT, bool underline = false, FontSize fontsize = FS_NORMAL);
 int DrawString(int left, int right, int top, const std::string &str, TextColour colour = TC_FROMSTRING, StringAlignment align = SA_LEFT, bool underline = false, FontSize fontsize = FS_NORMAL);
@@ -178,29 +172,18 @@ int GetCharacterHeight(FontSize size);
 /** Height of characters in the large (#FS_MONO) font. @note Some characters may be oversized. */
 #define FONT_HEIGHT_MONO  (GetCharacterHeight(FS_MONO))
 
-/**
- * Return where to start drawing a centered object inside a widget.
- * @param top The top coordinate (or the left coordinate) of the widget.
- * @param height The height (or width) of the widget.
- * @param size The height (or width) of the object to draw.
- * @return The coordinate where to start drawing the centered object.
- */
-static inline int Center(int top, int height, uint size = FONT_HEIGHT_NORMAL)
-{
-	return top + (height - size) / 2;
-}
-
-/**
- * Returns fint/button size, rescaled to current screen resolution from the base Android resolution, which is 854x480
- * @param value The value to rescale
- * @return Rescaled value, using lesser of the curret screen coordinates
- */
-static inline int RescaleFrom854x480(int value)
-{
-	return std::min(value * _cur_resolution.width / 854, value * _cur_resolution.height / 480);
-}
-
 extern DrawPixelInfo *_cur_dpi;
+
+/**
+ * Checks if a Colours value is valid.
+ *
+ * @param colours The value to check
+ * @return true if the given value is a valid Colours.
+ */
+static inline bool IsValidColours(Colours colours)
+{
+	return colours < COLOUR_END;
+}
 
 TextColour GetContrastColour(uint8 background, uint8 threshold = 128);
 

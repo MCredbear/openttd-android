@@ -21,8 +21,6 @@
 #include "../querystring_gui.h"
 #include "../core/geometry_func.hpp"
 #include "../textfile_gui.h"
-#include "../settings_type.h"
-#include "../settings_gui.h"
 #include "network_content_gui.h"
 
 
@@ -567,7 +565,6 @@ public:
 
 			case WID_NCL_CHECKBOX:
 				size->width = this->checkbox_size.width + WD_MATRIX_RIGHT + WD_MATRIX_LEFT;
-				size->width = GetMinButtonSize(size->width);
 				break;
 
 			case WID_NCL_TYPE: {
@@ -581,8 +578,7 @@ public:
 
 			case WID_NCL_MATRIX:
 				resize->height = std::max(this->checkbox_size.height, (uint)FONT_HEIGHT_NORMAL) + WD_MATRIX_TOP + WD_MATRIX_BOTTOM;
-				resize->height = GetMinButtonSize(resize->height);
-				size->height = 5 * resize->height;
+				size->height = 10 * resize->height;
 				break;
 		}
 	}
@@ -592,7 +588,7 @@ public:
 	{
 		switch (widget) {
 			case WID_NCL_FILTER_CAPT:
-				DrawString(r.left, r.right, Center(r.top, r.bottom - r.top), STR_CONTENT_FILTER_TITLE, TC_FROMSTRING, SA_RIGHT);
+				DrawString(r.left, r.right, r.top, STR_CONTENT_FILTER_TITLE, TC_FROMSTRING, SA_RIGHT);
 				break;
 
 			case WID_NCL_DETAILS:
@@ -635,8 +631,8 @@ public:
 		int line_height = std::max(this->checkbox_size.height, (uint)FONT_HEIGHT_NORMAL);
 
 		/* Fill the matrix with the information */
-		int sprite_y_offset = WD_MATRIX_TOP + (line_height - this->checkbox_size.height) / 2 - 1 + (this->resize.step_height - line_height) / 2;
-		int text_y_offset = WD_MATRIX_TOP + (line_height - FONT_HEIGHT_NORMAL) / 2 + (this->resize.step_height - line_height) / 2;
+		int sprite_y_offset = WD_MATRIX_TOP + (line_height - this->checkbox_size.height) / 2 - 1;
+		int text_y_offset = WD_MATRIX_TOP + (line_height - FONT_HEIGHT_NORMAL) / 2;
 		uint y = r.top;
 
 		auto iter = this->content.begin() + this->vscroll->GetPosition();
@@ -646,7 +642,7 @@ public:
 		for (/**/; iter != end; iter++) {
 			const ContentInfo *ci = *iter;
 
-			if (ci == this->selected) GfxFillRect(r.left + 1, y + WD_FRAMERECT_TOP, r.right - 1, y + this->resize.step_height - WD_FRAMERECT_BOTTOM, PC_GREY);
+			if (ci == this->selected) GfxFillRect(r.left + 1, y + 1, r.right - 1, y + this->resize.step_height - 1, PC_GREY);
 
 			SpriteID sprite;
 			SpriteID pal = PAL_NONE;
@@ -658,7 +654,7 @@ public:
 				case ContentInfo::DOES_NOT_EXIST: sprite = SPR_BLOT; pal = PALETTE_TO_RED;   break;
 				default: NOT_REACHED();
 			}
-			DrawSprite(sprite, pal, nwi_checkbox->pos_x + (nwi_checkbox->current_x - this->checkbox_size.width) / 2 + (pal == PAL_NONE ? 2 : 3), y + sprite_y_offset + (pal == PAL_NONE ? 1 : 0));
+			DrawSprite(sprite, pal, nwi_checkbox->pos_x + (pal == PAL_NONE ? 2 : 3), y + sprite_y_offset + (pal == PAL_NONE ? 1 : 0));
 
 			StringID str = STR_CONTENT_TYPE_BASE_GRAPHICS + ci->type - CONTENT_TYPE_BASE_GRAPHICS;
 			DrawString(nwi_type->pos_x, nwi_type->pos_x + nwi_type->current_x - 1, y + text_y_offset, str, TC_BLACK, SA_HOR_CENTER);
@@ -991,6 +987,8 @@ public:
 		for (TextfileType tft = TFT_BEGIN; tft < TFT_END; tft++) {
 			this->SetWidgetDisabledState(WID_NCL_TEXTFILE + tft, this->selected == nullptr || this->selected->state != ContentInfo::ALREADY_HERE || this->selected->GetTextfile(tft) == nullptr);
 		}
+
+		this->GetWidget<NWidgetCore>(WID_NCL_CANCEL)->widget_data = this->filesize_sum == 0 ? STR_AI_SETTINGS_CLOSE : STR_AI_LIST_CANCEL;
 	}
 };
 
@@ -1028,7 +1026,14 @@ static const NWidgetPart _nested_network_content_list_widgets[] = {
 		NWidget(WWT_DEFSIZEBOX, COLOUR_LIGHT_BLUE),
 	EndContainer(),
 	NWidget(WWT_PANEL, COLOUR_LIGHT_BLUE, WID_NCL_BACKGROUND),
-		NWidget(NWID_SPACER), SetMinimalSize(0, 3), SetResize(1, 0),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 7), SetResize(1, 0),
+		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(8, 8, 8),
+			/* Top */
+			NWidget(WWT_EMPTY, COLOUR_LIGHT_BLUE, WID_NCL_FILTER_CAPT), SetFill(1, 0), SetResize(1, 0),
+			NWidget(WWT_EDITBOX, COLOUR_LIGHT_BLUE, WID_NCL_FILTER), SetFill(1, 0), SetResize(1, 0),
+						SetDataTip(STR_LIST_FILTER_OSKTITLE, STR_LIST_FILTER_TOOLTIP),
+		EndContainer(),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 7), SetResize(1, 0),
 		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(8, 8, 8),
 			/* Left side. */
 			NWidget(NWID_VERTICAL), SetPIP(0, 4, 0),
@@ -1058,13 +1063,6 @@ static const NWidgetPart _nested_network_content_list_widgets[] = {
 			EndContainer(),
 			/* Right side. */
 			NWidget(NWID_VERTICAL), SetPIP(0, 4, 0),
-				NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(8, 8, 8),
-					/* Top */
-					NWidget(WWT_EMPTY, COLOUR_LIGHT_BLUE, WID_NCL_FILTER_CAPT), SetFill(1, 0), SetResize(1, 0),
-					NWidget(WWT_EDITBOX, COLOUR_LIGHT_BLUE, WID_NCL_FILTER), SetFill(1, 0), SetResize(1, 0),
-								SetDataTip(STR_LIST_FILTER_OSKTITLE, STR_LIST_FILTER_TOOLTIP),
-				EndContainer(),
-				NWidget(NWID_SPACER), SetMinimalSize(0, 3), SetResize(1, 0),
 				NWidget(WWT_PANEL, COLOUR_LIGHT_BLUE, WID_NCL_DETAILS), SetResize(1, 1), SetFill(1, 1), EndContainer(),
 				NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(0, 8, 0),
 					NWidget(WWT_PUSHTXTBTN, COLOUR_WHITE, WID_NCL_TEXTFILE + TFT_README), SetFill(1, 0), SetResize(1, 0), SetDataTip(STR_TEXTFILE_VIEW_README, STR_NULL),
@@ -1082,11 +1080,17 @@ static const NWidgetPart _nested_network_content_list_widgets[] = {
 			NWidget(WWT_PUSHTXTBTN, COLOUR_WHITE, WID_NCL_SEARCH_EXTERNAL), SetResize(1, 0), SetFill(1, 0),
 										SetDataTip(STR_CONTENT_SEARCH_EXTERNAL, STR_CONTENT_SEARCH_EXTERNAL_TOOLTIP),
 			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(0, 8, 0),
+				NWidget(WWT_PUSHTXTBTN, COLOUR_WHITE, WID_NCL_CANCEL), SetResize(1, 0), SetFill(1, 0),
+											SetDataTip(STR_BUTTON_CANCEL, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, COLOUR_WHITE, WID_NCL_DOWNLOAD), SetResize(1, 0), SetFill(1, 0),
 											SetDataTip(STR_CONTENT_DOWNLOAD_CAPTION, STR_CONTENT_DOWNLOAD_CAPTION_TOOLTIP),
-				/* Resize button. */
-				NWidget(WWT_RESIZEBOX, COLOUR_LIGHT_BLUE),
 			EndContainer(),
+		EndContainer(),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 2), SetResize(1, 0),
+		/* Resize button. */
+		NWidget(NWID_HORIZONTAL),
+			NWidget(NWID_SPACER), SetFill(1, 0), SetResize(1, 0),
+			NWidget(WWT_RESIZEBOX, COLOUR_LIGHT_BLUE),
 		EndContainer(),
 	EndContainer(),
 };

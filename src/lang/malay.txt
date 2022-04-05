@@ -1064,10 +1064,10 @@ STR_TERRAIN_TYPE_HILLY                                          :Berbukit
 STR_TERRAIN_TYPE_MOUNTAINOUS                                    :Bergunung
 STR_TERRAIN_TYPE_ALPINIST                                       :Alpinist
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Mengizinkan
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Bertoleransi
 STR_CITY_APPROVAL_HOSTILE                                       :Kurang mengizinkan
+STR_CITY_APPROVAL_PERMISSIVE                                    :Mengizinkan
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Tiada AI yang bersesuaian...{}Anda boleh memuat turun beberapa AI dari sistem 'Kandungan Atas Talian'
 
@@ -1504,6 +1504,7 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN               :Ketibaan kender
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER             :Ketibaan kenderaan di stesen pesaing: {STRING}
 
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Kemalangan / bencana: {STRING}
+
 
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Maklumat syarikat: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Paparkan surat khabar mengenai pembukaan syarikat baru, atau apabila syarikat dalam risiko untuk muflis
@@ -4804,5 +4805,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

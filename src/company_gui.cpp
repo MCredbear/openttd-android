@@ -35,9 +35,13 @@
 #include "road_func.h"
 #include "water.h"
 #include "station_func.h"
-#include "widget_type.h"
 #include "zoom_func.h"
 #include "sortlist_type.h"
+#include "company_cmd.h"
+#include "economy_cmd.h"
+#include "group_cmd.h"
+#include "misc_cmd.h"
+#include "object_cmd.h"
 
 #include "widgets/company_widget.h"
 
@@ -220,7 +224,7 @@ static const NWidgetPart _nested_company_finances_widgets[] = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, COLOUR_GREY),
 		NWidget(WWT_CAPTION, COLOUR_GREY, WID_CF_CAPTION), SetDataTip(STR_FINANCES_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
-		//NWidget(WWT_IMGBTN, COLOUR_GREY, WID_CF_TOGGLE_SIZE), SetDataTip(SPR_LARGE_SMALL_WINDOW, STR_TOOLTIP_TOGGLE_LARGE_SMALL_WINDOW),
+		NWidget(WWT_IMGBTN, COLOUR_GREY, WID_CF_TOGGLE_SIZE), SetDataTip(SPR_LARGE_SMALL_WINDOW, STR_TOOLTIP_TOGGLE_LARGE_SMALL_WINDOW),
 		NWidget(WWT_SHADEBOX, COLOUR_GREY),
 		NWidget(WWT_STICKYBOX, COLOUR_GREY),
 	EndContainer(),
@@ -436,11 +440,11 @@ struct CompanyFinancesWindow : Window {
 				break;
 
 			case WID_CF_INCREASE_LOAN: // increase loan
-				DoCommandP(0, 0, _ctrl_pressed, CMD_INCREASE_LOAN | CMD_MSG(STR_ERROR_CAN_T_BORROW_ANY_MORE_MONEY));
+				Command<CMD_INCREASE_LOAN>::Post(STR_ERROR_CAN_T_BORROW_ANY_MORE_MONEY, _ctrl_pressed ? LoanCommand::Max : LoanCommand::Interval, 0);
 				break;
 
 			case WID_CF_REPAY_LOAN: // repay loan
-				DoCommandP(0, 0, _ctrl_pressed, CMD_DECREASE_LOAN | CMD_MSG(STR_ERROR_CAN_T_REPAY_LOAN));
+				Command<CMD_DECREASE_LOAN>::Post(STR_ERROR_CAN_T_REPAY_LOAN, _ctrl_pressed ? LoanCommand::Max : LoanCommand::Interval, 0);
 				break;
 
 			case WID_CF_INFRASTRUCTURE: // show infrastructure details
@@ -524,7 +528,7 @@ public:
 
 	uint Height(uint width) const override
 	{
-		return GetMinButtonSize(std::max(FONT_HEIGHT_NORMAL, ScaleGUITrad(12) + 2));
+		return std::max(FONT_HEIGHT_NORMAL, ScaleGUITrad(12) + 2);
 	}
 
 	bool Selectable() const override
@@ -996,12 +1000,12 @@ public:
 			for (LiveryScheme scheme = LS_DEFAULT; scheme < LS_END; scheme++) {
 				/* Changed colour for the selected scheme, or all visible schemes if CTRL is pressed. */
 				if (HasBit(this->sel, scheme) || (_ctrl_pressed && _livery_class[scheme] == this->livery_class && HasBit(_loaded_newgrf_features.used_liveries, scheme))) {
-					DoCommandP(0, scheme | (widget == WID_SCL_PRI_COL_DROPDOWN ? 0 : 256), index, CMD_SET_COMPANY_COLOUR);
+					Command<CMD_SET_COMPANY_COLOUR>::Post(scheme, widget == WID_SCL_PRI_COL_DROPDOWN, (Colours)index);
 				}
 			}
 		} else {
 			/* Setting group livery */
-			DoCommandP(0, this->sel, (widget == WID_SCL_PRI_COL_DROPDOWN ? 0 : 256) | (index << 16), CMD_SET_GROUP_LIVERY);
+			Command<CMD_SET_GROUP_LIVERY>::Post(this->sel, widget == WID_SCL_PRI_COL_DROPDOWN, (Colours)index);
 		}
 	}
 
@@ -1150,7 +1154,7 @@ static const NWidgetPart _nested_select_company_manager_face_widgets[] = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, COLOUR_GREY),
 		NWidget(WWT_CAPTION, COLOUR_GREY, WID_SCMF_CAPTION), SetDataTip(STR_FACE_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
-		//NWidget(WWT_IMGBTN, COLOUR_GREY, WID_SCMF_TOGGLE_LARGE_SMALL), SetDataTip(SPR_LARGE_SMALL_WINDOW, STR_FACE_ADVANCED_TOOLTIP),
+		NWidget(WWT_IMGBTN, COLOUR_GREY, WID_SCMF_TOGGLE_LARGE_SMALL), SetDataTip(SPR_LARGE_SMALL_WINDOW, STR_FACE_ADVANCED_TOOLTIP),
 	EndContainer(),
 	NWidget(WWT_PANEL, COLOUR_GREY, WID_SCMF_SELECT_FACE),
 		NWidget(NWID_SPACER), SetMinimalSize(0, 2),
@@ -1271,8 +1275,6 @@ static const NWidgetPart _nested_select_company_manager_face_widgets[] = {
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_COLLAR), SetDataTip(STR_EMPTY, STR_FACE_COLLAR_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_COLLAR_R), SetDataTip(AWV_INCREASE, STR_FACE_COLLAR_TOOLTIP),
 						EndContainer(),
-					EndContainer(),
-					NWidget(NWID_SELECTION, INVALID_COLOUR, WID_SCMF_SEL_PARTS), // Advanced face parts setting.
 						NWidget(NWID_HORIZONTAL),
 							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_TIE_EARRING_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
 								SetDataTip(STR_FACE_EARRING, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
@@ -1283,7 +1285,6 @@ static const NWidgetPart _nested_select_company_manager_face_widgets[] = {
 						NWidget(NWID_SPACER), SetFill(0, 1),
 					EndContainer(),
 				EndContainer(),
-				NWidget(NWID_SPACER), SetFill(1, 0),
 			EndContainer(),
 		EndContainer(),
 		NWidget(NWID_SPACER), SetMinimalSize(0, 2),
@@ -1330,7 +1331,7 @@ class SelectCompanyManagerFaceWindow : public Window
 
 			/* Draw the value/bool in white (0xC). If the button clicked adds 1px to x and y text coordinates (IsWindowWidgetLowered()). */
 			DrawString(nwi_widget->pos_x + nwi_widget->IsLowered(), nwi_widget->pos_x + nwi_widget->current_x - 1 - nwi_widget->IsLowered(),
-					Center(nwi_widget->pos_y + nwi_widget->IsLowered(), nwi_widget->current_y), str, TC_WHITE, SA_HOR_CENTER);
+					nwi_widget->pos_y + 1 + nwi_widget->IsLowered(), str, TC_WHITE, SA_HOR_CENTER);
 		}
 	}
 
@@ -1384,10 +1385,6 @@ public:
 		Dimension yesno_dim = maxdim(GetStringBoundingBox(STR_FACE_YES), GetStringBoundingBox(STR_FACE_NO));
 		yesno_dim.width  += WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT;
 		yesno_dim.height += WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
-
-		yesno_dim.width  = GetMinButtonSize(yesno_dim.width);
-		yesno_dim.height = GetMinButtonSize(yesno_dim.height);
-
 		/* Size of the number button + arrows. */
 		Dimension number_dim = {0, 0};
 		for (int val = 1; val <= 12; val++) {
@@ -1589,7 +1586,7 @@ public:
 
 			/* OK button */
 			case WID_SCMF_ACCEPT:
-				DoCommandP(0, 0, this->face, CMD_SET_COMPANY_MANAGER_FACE);
+				Command<CMD_SET_COMPANY_MANAGER_FACE>::Post(this->face);
 				FALLTHROUGH;
 
 			/* Cancel button */
@@ -2198,10 +2195,8 @@ static const NWidgetPart _nested_company_widgets[] = {
 
 int GetAmountOwnedBy(const Company *c, Owner owner)
 {
-	return (c->share_owners[0] == owner) +
-				 (c->share_owners[1] == owner) +
-				 (c->share_owners[2] == owner) +
-				 (c->share_owners[3] == owner);
+	auto share_owned_by = [owner](auto share_owner) { return share_owner == owner; };
+	return std::count_if(c->share_owners.begin(), c->share_owners.end(), share_owned_by);
 }
 
 /** Strings for the company vehicle counts */
@@ -2278,13 +2273,8 @@ struct CompanyWindow : Window
 			}
 
 			/* Owners of company */
-			plane = SZSP_HORIZONTAL;
-			for (uint i = 0; i < lengthof(c->share_owners); i++) {
-				if (c->share_owners[i] != INVALID_COMPANY) {
-					plane = 0;
-					break;
-				}
-			}
+			auto invalid_owner = [](auto owner) { return owner == INVALID_COMPANY; };
+			plane = std::all_of(c->share_owners.begin(), c->share_owners.end(), invalid_owner) ? SZSP_HORIZONTAL : 0;
 			wi = this->GetWidget<NWidgetStacked>(WID_C_SELECT_DESC_OWNERS);
 			if (plane != wi->shown_plane) {
 				wi->SetDisplayedPlane(plane);
@@ -2584,11 +2574,11 @@ struct CompanyWindow : Window
 				break;
 
 			case WID_C_BUY_SHARE:
-				DoCommandP(0, this->window_number, 0, CMD_BUY_SHARE_IN_COMPANY | CMD_MSG(STR_ERROR_CAN_T_BUY_25_SHARE_IN_THIS));
+				Command<CMD_BUY_SHARE_IN_COMPANY>::Post(STR_ERROR_CAN_T_BUY_25_SHARE_IN_THIS, (CompanyID)this->window_number);
 				break;
 
 			case WID_C_SELL_SHARE:
-				DoCommandP(0, this->window_number, 0, CMD_SELL_SHARE_IN_COMPANY | CMD_MSG(STR_ERROR_CAN_T_SELL_25_SHARE_IN));
+				Command<CMD_SELL_SHARE_IN_COMPANY>::Post(STR_ERROR_CAN_T_SELL_25_SHARE_IN, (CompanyID)this->window_number);
 				break;
 
 			case WID_C_COMPANY_PASSWORD:
@@ -2621,7 +2611,7 @@ struct CompanyWindow : Window
 
 	void OnPlaceObject(Point pt, TileIndex tile) override
 	{
-		if (DoCommandP(tile, OBJECT_HQ, 0, CMD_BUILD_OBJECT | CMD_MSG(STR_ERROR_CAN_T_BUILD_COMPANY_HEADQUARTERS)) && !_shift_pressed) {
+		if (Command<CMD_BUILD_OBJECT>::Post(STR_ERROR_CAN_T_BUILD_COMPANY_HEADQUARTERS, tile, OBJECT_HQ, 0) && !_shift_pressed) {
 			ResetObjectToPlace();
 			this->RaiseButtons();
 		}
@@ -2643,16 +2633,16 @@ struct CompanyWindow : Window
 				Money money = (Money)(strtoull(str, nullptr, 10) / _currency->rate);
 				uint32 money_c = Clamp(ClampToI32(money), 0, 20000000); // Clamp between 20 million and 0
 
-				DoCommandP(0, money_c, this->window_number, CMD_GIVE_MONEY | CMD_MSG(STR_ERROR_CAN_T_GIVE_MONEY));
+				Command<CMD_GIVE_MONEY>::Post(STR_ERROR_CAN_T_GIVE_MONEY, money_c, (CompanyID)this->window_number);
 				break;
 			}
 
 			case WID_C_PRESIDENT_NAME:
-				DoCommandP(0, 0, 0, CMD_RENAME_PRESIDENT | CMD_MSG(STR_ERROR_CAN_T_CHANGE_PRESIDENT), nullptr, str);
+				Command<CMD_RENAME_PRESIDENT>::Post(STR_ERROR_CAN_T_CHANGE_PRESIDENT, str);
 				break;
 
 			case WID_C_COMPANY_NAME:
-				DoCommandP(0, 0, 0, CMD_RENAME_COMPANY | CMD_MSG(STR_ERROR_CAN_T_CHANGE_COMPANY_NAME), nullptr, str);
+				Command<CMD_RENAME_COMPANY>::Post(STR_ERROR_CAN_T_CHANGE_COMPANY_NAME, str);
 				break;
 
 			case WID_C_COMPANY_JOIN:
@@ -2779,7 +2769,7 @@ struct BuyCompanyWindow : Window {
 				break;
 
 			case WID_BC_YES:
-				DoCommandP(0, this->window_number, 0, CMD_BUY_COMPANY | CMD_MSG(STR_ERROR_CAN_T_BUY_COMPANY));
+				Command<CMD_BUY_COMPANY>::Post(STR_ERROR_CAN_T_BUY_COMPANY, (CompanyID)this->window_number);
 				break;
 		}
 	}

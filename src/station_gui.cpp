@@ -31,6 +31,7 @@
 #include "town.h"
 #include "linkgraph/linkgraph.h"
 #include "zoom_func.h"
+#include "station_cmd.h"
 
 #include "widgets/station_widget.h"
 
@@ -391,7 +392,6 @@ public:
 
 			case WID_STL_LIST:
 				resize->height = std::max(FONT_HEIGHT_NORMAL, FONT_HEIGHT_SMALL + ScaleFontTrad(3));
-				resize->height = GetMinButtonSize(resize->height);
 				size->height = WD_FRAMERECT_TOP + 5 * resize->height + WD_FRAMERECT_BOTTOM;
 
 				/* Determine appropriate width for mini station rating graph */
@@ -445,7 +445,6 @@ public:
 				int max = std::min<size_t>(this->vscroll->GetPosition() + this->vscroll->GetCapacity(), this->stations.size());
 				int y = r.top + WD_FRAMERECT_TOP;
 				uint line_height = this->GetWidget<NWidgetBase>(widget)->resize_y;
-				line_height = GetMinButtonSize(line_height);
 				/* Spacing between station name and first rating graph. */
 				int text_spacing = ScaleFontTrad(5);
 				/* Spacing between additional rating graphs. */
@@ -758,7 +757,7 @@ static const NWidgetPart _nested_company_stations_widgets[] = {
 		NWidget(WWT_PANEL, COLOUR_GREY), SetDataTip(0x0, STR_NULL), SetResize(1, 0), SetFill(1, 1), EndContainer(),
 	EndContainer(),
 	NWidget(NWID_HORIZONTAL),
-		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_STL_SORTBY), SetSizingType(NWST_BUTTON), SetMinimalSize(81, 12), SetDataTip(STR_BUTTON_SORT_BY, STR_TOOLTIP_SORT_ORDER),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_STL_SORTBY), SetMinimalSize(81, 12), SetDataTip(STR_BUTTON_SORT_BY, STR_TOOLTIP_SORT_ORDER),
 		NWidget(WWT_DROPDOWN, COLOUR_GREY, WID_STL_SORTDROPBTN), SetMinimalSize(163, 12), SetDataTip(STR_SORT_BY_NAME, STR_TOOLTIP_SORT_CRITERIA), // widget_data gets overwritten.
 		NWidget(WWT_PANEL, COLOUR_GREY), SetDataTip(0x0, STR_NULL), SetResize(1, 0), SetFill(1, 1), EndContainer(),
 	EndContainer(),
@@ -836,7 +835,7 @@ static const NWidgetPart _nested_station_view_widgets[] = {
  * @param right right most coordinate to draw on
  * @param y y coordinate
  */
-static void DrawCargoIcons(CargoID i, uint waiting, int left, int right, int top, int y)
+static void DrawCargoIcons(CargoID i, uint waiting, int left, int right, int y)
 {
 	int width = ScaleGUITrad(10);
 	uint num = std::min<uint>((waiting + (width / 2)) / width, (right - left) / width); // maximum is width / 10 icons so it won't overflow
@@ -1411,12 +1410,6 @@ struct StationViewWindow : public Window {
 					fill->width = 0;
 				}
 				break;
-
-			case WID_SV_SORT_ORDER:
-			case WID_SV_GROUP:
-				*size = maxdim(GetStringBoundingBox(STR_BUTTON_SORT_BY), GetStringBoundingBox(STR_STATION_VIEW_GROUP));
-				size->width += padding.width;
-				break;
 		}
 	}
 
@@ -1770,7 +1763,7 @@ struct StationViewWindow : public Window {
 
 				if (this->groupings[column] == GR_CARGO) {
 					str = STR_STATION_VIEW_WAITING_CARGO;
-					DrawCargoIcons(cd->GetCargo(), cd->GetCount(), r.left + WD_FRAMERECT_LEFT + this->expand_shrink_width, r.right - WD_FRAMERECT_RIGHT - this->expand_shrink_width, y, y + FONT_HEIGHT_NORMAL);
+					DrawCargoIcons(cd->GetCargo(), cd->GetCount(), r.left + WD_FRAMERECT_LEFT + this->expand_shrink_width, r.right - WD_FRAMERECT_RIGHT - this->expand_shrink_width, y);
 				} else {
 					if (!auto_distributed) grouping = GR_SOURCE;
 					StationID station = cd->GetStation();
@@ -1955,7 +1948,7 @@ struct StationViewWindow : public Window {
 				break;
 
 			case WID_SV_CLOSE_AIRPORT:
-				DoCommandP(0, this->window_number, 0, CMD_OPEN_CLOSE_AIRPORT);
+				Command<CMD_OPEN_CLOSE_AIRPORT>::Post(this->window_number);
 				break;
 
 			case WID_SV_TRAINS:   // Show list of scheduled trains to this station
@@ -2092,7 +2085,7 @@ struct StationViewWindow : public Window {
 	{
 		if (str == nullptr) return;
 
-		DoCommandP(0, this->window_number, 0, CMD_RENAME_STATION | CMD_MSG(STR_ERROR_CAN_T_RENAME_STATION), nullptr, str);
+		Command<CMD_RENAME_STATION>::Post(STR_ERROR_CAN_T_RENAME_STATION, this->window_number, str);
 	}
 
 	void OnResize() override
@@ -2272,13 +2265,13 @@ static const NWidgetPart _nested_select_station_widgets[] = {
  */
 template <class T>
 struct SelectStationWindow : Window {
-	CommandContainer select_station_cmd; ///< Command to build new station
+	StationPickerCmdProc select_station_proc;
 	TileArea area; ///< Location of new station
 	Scrollbar *vscroll;
 
-	SelectStationWindow(WindowDesc *desc, const CommandContainer &cmd, TileArea ta) :
+	SelectStationWindow(WindowDesc *desc, TileArea ta, StationPickerCmdProc&& proc) :
 		Window(desc),
-		select_station_cmd(cmd),
+		select_station_proc(std::move(proc)),
 		area(ta)
 	{
 		this->CreateNestedTree();
@@ -2311,8 +2304,8 @@ struct SelectStationWindow : Window {
 			d = maxdim(d, GetStringBoundingBox(T::EXPECTED_FACIL == FACIL_WAYPOINT ? STR_STATION_LIST_WAYPOINT : STR_STATION_LIST_STATION));
 		}
 
-		resize->height = GetMinButtonSize(d.height);
-		d.height = 5 * resize->height;
+		resize->height = d.height;
+		d.height *= 5;
 		d.width += WD_FRAMERECT_RIGHT + WD_FRAMERECT_LEFT;
 		d.height += WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
 		*size = d;
@@ -2322,7 +2315,7 @@ struct SelectStationWindow : Window {
 	{
 		if (widget != WID_JS_PANEL) return;
 
-		uint y = Center(r.top, this->resize.step_height);
+		uint y = r.top + WD_FRAMERECT_TOP;
 		if (this->vscroll->GetPosition() == 0) {
 			DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, T::EXPECTED_FACIL == FACIL_WAYPOINT ? STR_JOIN_WAYPOINT_CREATE_SPLITTED_WAYPOINT : STR_JOIN_STATION_CREATE_SPLITTED_STATION);
 			y += this->resize.step_height;
@@ -2349,12 +2342,8 @@ struct SelectStationWindow : Window {
 
 		if (distant_join && st_index >= _stations_nearby_list.size()) return;
 
-		/* Insert station to be joined into stored command */
-		SB(this->select_station_cmd.p2, 16, 16,
-		   (distant_join ? _stations_nearby_list[st_index] : NEW_STATION));
-
 		/* Execute stored Command */
-		DoCommandP(&this->select_station_cmd);
+		this->select_station_proc(false, distant_join ? _stations_nearby_list[st_index] : NEW_STATION);
 
 		/* Close Window; this might cause double frees! */
 		CloseWindowById(WC_SELECT_STATION, 0);
@@ -2420,7 +2409,7 @@ static WindowDesc _select_station_desc(
  * @return whether we need to show the station selection window.
  */
 template <class T>
-static bool StationJoinerNeeded(const CommandContainer &cmd, TileArea ta)
+static bool StationJoinerNeeded(TileArea ta, const StationPickerCmdProc &proc)
 {
 	/* Only show selection if distant join is enabled in the settings */
 	if (!_settings_game.station.distant_join_stations) return false;
@@ -2438,7 +2427,7 @@ static bool StationJoinerNeeded(const CommandContainer &cmd, TileArea ta)
 	if (!_ctrl_pressed) return false;
 
 	/* Now check if we could build there */
-	if (DoCommand(&cmd, CommandFlagsToDCFlags(GetCommandFlags(cmd.cmd))).Failed()) return false;
+	if (!proc(true, INVALID_STATION)) return false;
 
 	/* Test for adjacent station or station below selection.
 	 * If adjacent-stations is disabled and we are building next to a station, do not show the selection window.
@@ -2454,32 +2443,32 @@ static bool StationJoinerNeeded(const CommandContainer &cmd, TileArea ta)
  * @tparam the class to find stations for
  */
 template <class T>
-void ShowSelectBaseStationIfNeeded(const CommandContainer &cmd, TileArea ta)
+void ShowSelectBaseStationIfNeeded(TileArea ta, StationPickerCmdProc&& proc)
 {
-	if (StationJoinerNeeded<T>(cmd, ta)) {
+	if (StationJoinerNeeded<T>(ta, proc)) {
 		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
-		new SelectStationWindow<T>(&_select_station_desc, cmd, ta);
+		new SelectStationWindow<T>(&_select_station_desc, ta, std::move(proc));
 	} else {
-		DoCommandP(&cmd);
+		proc(false, INVALID_STATION);
 	}
 }
 
 /**
  * Show the station selection window when needed. If not, build the station.
- * @param cmd Command to build the station.
  * @param ta Area to build the station in
+ * @param proc Function called to execute the build command.
  */
-void ShowSelectStationIfNeeded(const CommandContainer &cmd, TileArea ta)
+void ShowSelectStationIfNeeded(TileArea ta, StationPickerCmdProc proc)
 {
-	ShowSelectBaseStationIfNeeded<Station>(cmd, ta);
+	ShowSelectBaseStationIfNeeded<Station>(ta, std::move(proc));
 }
 
 /**
  * Show the waypoint selection window when needed. If not, build the waypoint.
- * @param cmd Command to build the waypoint.
  * @param ta Area to build the waypoint in
+ * @param proc Function called to execute the build command.
  */
-void ShowSelectWaypointIfNeeded(const CommandContainer &cmd, TileArea ta)
+void ShowSelectWaypointIfNeeded(TileArea ta, StationPickerCmdProc proc)
 {
-	ShowSelectBaseStationIfNeeded<Waypoint>(cmd, ta);
+	ShowSelectBaseStationIfNeeded<Waypoint>(ta, std::move(proc));
 }

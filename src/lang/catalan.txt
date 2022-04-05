@@ -1152,10 +1152,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Escarpat
 STR_TERRAIN_TYPE_CUSTOM                                         :Alçada personalitzada
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Alçada personalitzada ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Permissiva
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Tolerant
 STR_CITY_APPROVAL_HOSTILE                                       :Hostil
+STR_CITY_APPROVAL_PERMISSIVE                                    :Permissiva
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}No hi ha cap IA disponible...{}Podeu descarregar-ne a través del «Contingut en línia».
 
@@ -1744,6 +1744,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Mostra les not�
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Accidents / desastres: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Mostra un diari quan passin accidents i desastres
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Accidents dels vehicles de competidors: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Mostra un diari amb notícies dels accidents dels vehicles dels oponents.
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Informació de la companyia: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Mostra les notícies de companyies noves que es creen i de companyies en risc de fer fallida
 
@@ -2258,6 +2261,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Escenar
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Mida del mapa: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Versió del servidor: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Adreça del servidor: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Codi d'invitació: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Data inicial: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Data actual: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Script de partida: {WHITE}{STRING} (v{NUM})
@@ -2413,6 +2417,7 @@ STR_NETWORK_CHAT_TO_COMPANY                                     :[Equip] a {STRI
 STR_NETWORK_CHAT_CLIENT                                         :[Privat] {STRING}: {WHITE}{STRING}
 STR_NETWORK_CHAT_TO_CLIENT                                      :[Privat] a {STRING}: {WHITE}{STRING}
 STR_NETWORK_CHAT_ALL                                            :[Tothom] {STRING}: {WHITE}{STRING}
+STR_NETWORK_CHAT_EXTERNAL                                       :[{3:STRING}] {0:STRING}: {WHITE}{1:STRING}
 STR_NETWORK_CHAT_OSKTITLE                                       :{BLACK}Posa el text pel xat de xarxa
 
 # Network messages
@@ -2673,6 +2678,7 @@ STR_STATION_CLASS_WAYP                                          :Punt de pas
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Selecció de senyals
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Mostra o amaga els tipus avançats de senyals.
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Senyal de secció (mecànic){}Aquest és el tipus de senyal més senzill. Permet l'entrada a la següent secció de vies només si no hi ha cap altre tren.
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Senyal previ d'entrada (mecànic){}En verd si a la següent secció no hi ha trens i, a més a més, hi ha almenys un senyal previ de sortida en verd. En cas contrari, en vermell.
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Senyal previ de sortida (mecànic){}Es comporta com un senyal de secció i activa correctament els senyals previs d'entrada i combinats.
@@ -5551,5 +5557,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

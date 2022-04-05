@@ -337,7 +337,9 @@ enum SaveLoadVersion : uint16 {
 
 	SLV_TABLE_CHUNKS,                       ///< 295  PR#9322 Introduction of CH_TABLE and CH_SPARSE_TABLE.
 	SLV_SCRIPT_INT64,                       ///< 296  PR#9415 SQInteger is 64bit but was saved as 32bit.
-	SLV_LINKGRAPH_TRAVEL_TIME,              ///< 297  PR#9457 Store travel time in the linkgraph.
+	SLV_LINKGRAPH_TRAVEL_TIME,              ///< 297  PR#9457 v12.0-RC1  Store travel time in the linkgraph.
+	SLV_DOCK_DOCKINGTILES,                  ///< 298  PR#9578 All tiles around docks may be docking tiles.
+	SLV_REPAIR_OBJECT_DOCKING_TILES,        ///< 299  PR#9594 v12.0  Fixing issue with docking tiles overlapping objects.
 
 	SL_MAX_VERSION,                         ///< Highest possible saveload version
 };
@@ -356,8 +358,6 @@ struct FileToSaveLoad {
 	AbstractFileType abstract_ftype; ///< Abstract type of file (scenario, heightmap, etc).
 	std::string name;                ///< Name of the file.
 	char title[255];                 ///< Internal name of the game.
-	bool cloud_save;                 ///< Save the file to the cloud from the video thread.
-	bool cloud_load;                 ///< Load the file from the cloud from the video thread.
 
 	void SetMode(FiosType ft);
 	void SetMode(SaveLoadOperation fop, AbstractFileType aft, DetailedFileType dft);

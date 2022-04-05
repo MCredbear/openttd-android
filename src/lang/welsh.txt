@@ -1092,10 +1092,10 @@ STR_TERRAIN_TYPE_HILLY                                          :Bryniog
 STR_TERRAIN_TYPE_MOUNTAINOUS                                    :Mynyddig
 STR_TERRAIN_TYPE_ALPINIST                                       :Mynyddwr
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Bodlon
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Hapus
 STR_CITY_APPROVAL_HOSTILE                                       :Gwrthwynebus
+STR_CITY_APPROVAL_PERMISSIVE                                    :Bodlon
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Dim AI addas ar gael...{}Gallwch llawrlwytho sawl AI drwy'r system 'Cynnwys Ar-lein'
 
@@ -1641,6 +1641,7 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Dangos papur ne
 
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Damweiniau / trychinebau: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Dangos papur newydd pan fo damweiniau neu drychinebau'n digwydd
+
 
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Gwybodaeth Cwmnïau: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Dangos papur newydd pan fo cwmni newydd yn dechrau, neu pan fo cwmnïau ar fin taro'r wal
@@ -5162,5 +5163,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

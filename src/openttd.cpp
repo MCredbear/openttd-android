@@ -66,6 +66,7 @@
 #include "framerate_type.h"
 #include "industry.h"
 #include "network/network_gui.h"
+#include "misc_cmd.h"
 
 #include "linkgraph/linkgraphschedule.h"
 
@@ -73,12 +74,6 @@
 #include <system_error>
 
 #include "safeguards.h"
-#ifdef __ANDROID__
-#include <unistd.h>
-#include <SDL_android.h>
-#endif
-#include <limits.h>
-#include <string>
 
 #ifdef __EMSCRIPTEN__
 #	include <emscripten.h>
@@ -699,16 +694,6 @@ int openttd_main(int argc, char *argv[])
 	 * just be out of the bounds of the window. */
 	_cursor.in_window = true;
 
-	{
-#ifndef WIN32
-		// Configure local font path on Android, it uses older Fontconfig version that does not require config file
-		setenv("FONTCONFIG_FONTS", "fonts", 1);
-#endif
-#ifdef __EMSCRIPTEN__
-		// Fontconfig config file is required on Emscripten, and the path to fonts directory is named differently
-		setenv("FONTCONFIG_FILE", "/fonts/fonts.conf", 1);
-#endif
-	}
 	/* enumerate language files */
 	InitializeLanguagePacks();
 
@@ -867,7 +852,7 @@ static void MakeNewGameDone()
 	/* In a dedicated server, the server does not play */
 	if (!VideoDriver::GetInstance()->HasGUI()) {
 		OnStartGame(true);
-		if (_settings_client.gui.pause_on_newgame) DoCommandP(0, PM_PAUSED_NORMAL, 1, CMD_PAUSE);
+		if (_settings_client.gui.pause_on_newgame) Command<CMD_PAUSE>::Post(PM_PAUSED_NORMAL, true);
 		return;
 	}
 
@@ -896,7 +881,7 @@ static void MakeNewGameDone()
 		NetworkChangeCompanyPassword(_local_company, _settings_client.network.default_company_pass);
 	}
 
-	if (_settings_client.gui.pause_on_newgame) DoCommandP(0, PM_PAUSED_NORMAL, 1, CMD_PAUSE);
+	if (_settings_client.gui.pause_on_newgame) Command<CMD_PAUSE>::Post(PM_PAUSED_NORMAL, true);
 
 	CheckEngines();
 	CheckIndustries();
@@ -1061,7 +1046,7 @@ void SwitchToMode(SwitchMode new_mode)
 				}
 				OnStartGame(_network_dedicated);
 				/* Decrease pause counter (was increased from opening load dialog) */
-				DoCommandP(0, PM_PAUSED_SAVELOAD, 0, CMD_PAUSE);
+				Command<CMD_PAUSE>::Post(PM_PAUSED_SAVELOAD, false);
 			}
 			break;
 		}
@@ -1083,7 +1068,7 @@ void SwitchToMode(SwitchMode new_mode)
 				SetLocalCompany(OWNER_NONE);
 				_settings_newgame.game_creation.starting_year = _cur_year;
 				/* Cancel the saveload pausing */
-				DoCommandP(0, PM_PAUSED_SAVELOAD, 0, CMD_PAUSE);
+				Command<CMD_PAUSE>::Post(PM_PAUSED_SAVELOAD, false);
 			} else {
 				SetDParamStr(0, GetSaveLoadErrorString());
 				ShowErrorMessage(STR_JUST_RAW_STRING, INVALID_STRING_ID, WL_ERROR);
@@ -1111,9 +1096,6 @@ void SwitchToMode(SwitchMode new_mode)
 				ShowErrorMessage(STR_JUST_RAW_STRING, INVALID_STRING_ID, WL_ERROR);
 			} else {
 				CloseWindowById(WC_SAVELOAD, 0);
-				if (_settings_client.gui.save_to_network) {
-					_file_to_saveload.cloud_save = true;
-				}
 			}
 			break;
 
@@ -1133,50 +1115,6 @@ void SwitchToMode(SwitchMode new_mode)
 	}
 }
 
-/**
- * Perform saving or loading to the cloud.
- * This function must be called from the SDL video thread.
- */
-void ProcessCloudSaveFromVideoThread()
-{
-	static const char *NETWORK_SAVE_FILENAME = "network-save.sav";
-	static const char *NETWORK_SAVE_SCREENSHOT_FILE = "OpenTTD-network-save";
-	static const char *NETWORK_SAVE_SCREENSHOT_FILE_PNG = "OpenTTD-network-save.png";
-
-	if (_file_to_saveload.cloud_save) {
-		_file_to_saveload.cloud_save = false;
-		const char* lastPart = strrchr(_file_to_saveload.name.c_str(), PATHSEPCHAR);
-		if (!lastPart) {
-			lastPart = _file_to_saveload.name.c_str();
-		} else {
-			lastPart++;
-		}
-		MakeScreenshot(SC_VIEWPORT, NETWORK_SAVE_SCREENSHOT_FILE);
-		std::string screenshotFile = FioFindFullPath(SCREENSHOT_DIR, NETWORK_SAVE_SCREENSHOT_FILE_PNG);
-		uint64_t playedTime = abs(_date - DAYS_TILL(_settings_newgame.game_creation.starting_year)) * 1000;
-		int status = 0;
-#ifdef __ANDROID__
-		status = SDL_ANDROID_CloudSave(_file_to_saveload.name.c_str(), lastPart, "OpenTTD", lastPart, screenshotFile.c_str(), playedTime);
-#endif
-		if (_settings_client.gui.save_to_network == 2) {
-			_settings_client.gui.save_to_network = status ? 1 : 0;
-		}
-	}
-	if (_file_to_saveload.cloud_load) {
-		_file_to_saveload.cloud_load = false;
-		std::string savePath = FiosMakeSavegameName(NETWORK_SAVE_FILENAME);
-		int status = 0;
-#ifdef __ANDROID__
-		status = SDL_ANDROID_CloudLoad(savePath.c_str(), NULL, "OpenTTD");
-#endif
-		if (status) {
-			_file_to_saveload.SetMode(FIOS_TYPE_FILE);
-			_file_to_saveload.SetName(savePath.c_str());
-			_file_to_saveload.SetTitle("Network Save");
-			_switch_mode = SM_LOAD_GAME;
-		}
-	}
-}
 
 /**
  * Check the validity of some of the caches.

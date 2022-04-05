@@ -1152,10 +1152,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alpin
 STR_TERRAIN_TYPE_CUSTOM                                         :Hauteur personnalisée
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Hauteur personnalisée ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Laxiste
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Tolérante
 STR_CITY_APPROVAL_HOSTILE                                       :Hostile
+STR_CITY_APPROVAL_PERMISSIVE                                    :Laxiste
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Aucune IA utilisable...{}Vous pouvez télécharger diverses IA via le système de «{NBSP}Contenu en ligne{NBSP}».
 
@@ -1744,6 +1744,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Afficher un jou
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Accidents / Catastrophes{NBSP}: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Afficher un journal quand des accidents ou des catastrophes se produisent
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Accidents de véhicules d'un concurrent{NBSP}: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Afficher un journal au sujet des véhicules accidentés des concurrents
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Informations corporatives{NBSP}: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Afficher un journal quand une nouvelle compagnie débute, ou quand des compagnies risquent la banqueroute
 
@@ -2258,6 +2261,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Terrain
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Taille de la carte{NBSP}: {WHITE}{COMMA}{NBSP}×{NBSP}{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Version du serveur{NBSP}: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Adresse du serveur{NBSP}: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Code d'invitation{NBSP}: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Date de début{NBSP}: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Date courante{NBSP}: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Script de jeu{NBSP}: {WHITE}{STRING} (v{NUM})
@@ -2413,6 +2417,7 @@ STR_NETWORK_CHAT_TO_COMPANY                                     :[Équipe] À {S
 STR_NETWORK_CHAT_CLIENT                                         :[Privé] {STRING}{NBSP}: {WHITE}{STRING}
 STR_NETWORK_CHAT_TO_CLIENT                                      :[Privé] À {STRING}{NBSP}: {WHITE}{STRING}
 STR_NETWORK_CHAT_ALL                                            :[Tous] {STRING}{NBSP}: {WHITE}{STRING}
+STR_NETWORK_CHAT_EXTERNAL                                       :[{3:STRING}] {0:STRING}{NBSP}: {WHITE}{1:STRING}
 STR_NETWORK_CHAT_OSKTITLE                                       :{BLACK}Entrer le texte du clavardage
 
 # Network messages
@@ -2673,6 +2678,7 @@ STR_STATION_CLASS_WAYP                                          :Points de contr
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Sélection des signaux
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Basculer l'affichage des types de signaux avancés
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Signal de bloc (sémaphore){}Ce sont les signaux les plus basiques, n'autorisant qu'un seul train à la fois dans un même bloc
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Signal d'entrée (sémaphore){}Vert tant qu'au moins un signal de sortie du bloc est vert, rouge dans le cas contraire.
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Signal de sortie (sémaphore){}Fonctionne comme un signal de bloc, mais est nécessaire pour commander les signaux d'entrée et combinés
@@ -5551,5 +5557,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

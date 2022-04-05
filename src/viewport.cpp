@@ -88,7 +88,7 @@
 #include "command_func.h"
 #include "network/network_func.h"
 #include "framerate_type.h"
-#include "build_confirmation_func.h"
+#include "viewport_cmd.h"
 
 #include <forward_list>
 #include <map>
@@ -2002,7 +2002,7 @@ void MarkTileDirtyByTile(TileIndex tile, int bridge_level_offset, int tile_heigh
  *
  * @ingroup dirty
  */
-void SetSelectionTilesDirty()
+static void SetSelectionTilesDirty()
 {
 	int x_size = _thd.size.x;
 	int y_size = _thd.size.y;
@@ -2330,8 +2330,6 @@ static void PlaceObject()
 	Point pt;
 	Window *w;
 
-	if (BuildConfirmationWindowProcessViewportClick()) return;
-
 	pt = GetTileBelowCursor();
 	if (pt.x == -1) return;
 
@@ -2350,22 +2348,6 @@ static void PlaceObject()
 
 bool HandleViewportClicked(const Viewport *vp, int x, int y)
 {
-	if (_move_pressed) return false;
-
-	// Allow scrolling viewport with mouse even in selection mode,
-	// unless we select line or area, or perform drag&drop
-	if ((_thd.place_mode & HT_DRAG_MASK) != HT_NONE && !(_thd.place_mode & HT_SCROLL_VIEWPORT)) {
-		PlaceObject();
-		return true;
-	}
-
-	return false;
-}
-
-bool HandleViewportMouseUp(const Viewport *vp, int x, int y)
-{
-	if (_move_pressed) return false;
-
 	const Vehicle *v = CheckClickOnVehicle(vp, x, y);
 
 	if (_thd.place_mode & HT_VEHICLE) {
@@ -2618,10 +2600,8 @@ void UpdateTileSelection()
 
 						default: NOT_REACHED();
 					}
-					if (!ConfirmationWindowShown()) {
-						_thd.selstart.x = x1 & ~TILE_UNIT_MASK;
-						_thd.selstart.y = y1 & ~TILE_UNIT_MASK;
-					}
+					_thd.selstart.x = x1 & ~TILE_UNIT_MASK;
+					_thd.selstart.y = y1 & ~TILE_UNIT_MASK;
 					break;
 				default:
 					NOT_REACHED();
@@ -2630,8 +2610,6 @@ void UpdateTileSelection()
 			_thd.new_pos.y = y1 & ~TILE_UNIT_MASK;
 		}
 	}
-
-	if (ConfirmationWindowShown()) return;
 
 	/* redraw selection */
 	if (_thd.drawstyle != new_drawstyle ||
@@ -2694,9 +2672,7 @@ void VpStartPlaceSizing(TileIndex tile, ViewportPlaceMethod method, ViewportDrag
 	}
 
 	HighLightStyle others = _thd.place_mode & ~(HT_DRAG_MASK | HT_DIR_MASK);
-	if (method == VPM_SINGLE_TILE) {
-		/* Nothing to do. */
-	} else if ((_thd.place_mode & HT_DRAG_MASK) == HT_RECT) {
+	if ((_thd.place_mode & HT_DRAG_MASK) == HT_RECT) {
 		_thd.place_mode = HT_SPECIAL | others;
 		_thd.next_drawstyle = HT_RECT | others;
 	} else if (_thd.place_mode & (HT_RAIL | HT_LINE)) {
@@ -2749,7 +2725,7 @@ void VpSetPresizeRange(TileIndex from, TileIndex to)
 	}
 }
 
-void VpStartPreSizing()
+static void VpStartPreSizing()
 {
 	_thd.selend.x = -1;
 	_special_mouse_mode = WSM_PRESIZE;
@@ -3191,11 +3167,6 @@ void VpSelectTilesWithMethod(int x, int y, ViewportPlaceMethod method)
 	int limit = 0;
 
 	switch (method) {
-		case VPM_SINGLE_TILE:
-			_thd.selstart.x = x;
-			_thd.selstart.y = y;
-			break;
-
 		case VPM_X_OR_Y: // drag in X or Y direction
 			if (abs(sy - y) < abs(sx - x)) {
 				y = sy;
@@ -3346,7 +3317,6 @@ EventState VpHandlePlaceSizingDrag()
 
 	/* while dragging execute the drag procedure of the corresponding window (mostly VpSelectTilesWithMethod() ) */
 	if (_left_button_down) {
-		HideBuildConfirmationWindow();
 		if (_special_mouse_mode == WSM_DRAGGING) {
 			/* Only register a drag event when the mouse moved. */
 			if (_thd.new_pos.x == _thd.selstart.x && _thd.new_pos.y == _thd.selstart.y) return ES_HANDLED;
@@ -3358,17 +3328,13 @@ EventState VpHandlePlaceSizingDrag()
 		return ES_HANDLED;
 	}
 
-	ShowBuildConfirmationWindow(); // This will also remember tile selection, so it's okay for the code below to change selection
-
 	/* Mouse button released. */
 	_special_mouse_mode = WSM_NONE;
 	if (_special_mouse_mode == WSM_DRAGGING) return ES_HANDLED;
 
 	/* Keep the selected tool, but reset it to the original mode. */
 	HighLightStyle others = _thd.place_mode & ~(HT_DRAG_MASK | HT_DIR_MASK);
-	if (_thd.select_method == VPM_SINGLE_TILE) {
-		goto place_mouseup;
-	} else if ((_thd.next_drawstyle & HT_DRAG_MASK) == HT_RECT) {
+	if ((_thd.next_drawstyle & HT_DRAG_MASK) == HT_RECT) {
 		_thd.place_mode = HT_RECT | others;
 	} else if (_thd.select_method & VPM_SIGNALDIRS) {
 		_thd.place_mode = HT_RECT | others;
@@ -3379,7 +3345,9 @@ EventState VpHandlePlaceSizingDrag()
 	}
 	SetTileSelectSize(1, 1);
 
-place_mouseup:
+	HideMeasurementTooltips();
+	w->OnPlaceMouseUp(_thd.select_method, _thd.select_proc, _thd.selend, TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(_thd.selend.x, _thd.selend.y));
+
 	return ES_HANDLED;
 }
 
@@ -3396,24 +3364,6 @@ void SetObjectToPlaceWnd(CursorID icon, PaletteID pal, HighLightStyle mode, Wind
 }
 
 #include "table/animcursors.h"
-
-static WindowClass _last_selected_window_class;
-static WindowNumber _last_selected_window_number;
-
-/** Place object from the build confirmation dialog */
-void ConfirmPlacingObject()
-{
-	Window *w = _thd.GetCallbackWnd();
-	if (w == NULL) {
-		ResetObjectToPlace();
-		return;
-	}
-
-	_last_selected_window_class = _thd.window_class;
-	_last_selected_window_number = _thd.window_number;
-	HideMeasurementTooltips();
-	w->OnPlaceMouseUp(_thd.select_method, _thd.select_proc, _thd.selend, TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(_thd.selend.x, _thd.selend.y));
-}
 
 /**
  * Change the cursor and mouse click/drag handling to a mode for performing special operations like tile area selection, object placement, etc.
@@ -3473,20 +3423,7 @@ void SetObjectToPlace(CursorID icon, PaletteID pal, HighLightStyle mode, WindowC
 /** Reset the cursor and mouse mode handling back to default (normal cursor, only clicking in windows). */
 void ResetObjectToPlace()
 {
-	if (_thd.window_class != WC_INVALID) {
-		_last_selected_window_class = _thd.window_class;
-		_last_selected_window_number = _thd.window_number;
-	}
 	SetObjectToPlace(SPR_CURSOR_MOUSE, PAL_NONE, HT_NONE, WC_MAIN_WINDOW, 0);
-	HideBuildConfirmationWindow();
-	MoveAllHiddenWindowsBackToScreen();
-}
-
-void ToolbarSelectLastTool()
-{
-	Window *w = FindWindowById(_last_selected_window_class, _last_selected_window_number);
-	if (w != NULL) w->SelectLastTool();
-	_last_selected_window_class = WC_INVALID;
 }
 
 Point GetViewportStationMiddle(const Viewport *vp, const Station *st)
@@ -3529,25 +3466,23 @@ void InitializeSpriteSorter()
 
 /**
  * Scroll players main viewport.
- * @param tile tile to center viewport on
  * @param flags type of operation
- * @param p1 ViewportScrollTarget of scroll target
- * @param p2 company or client id depending on the target
- * @param text unused
+ * @param tile tile to center viewport on
+ * @param target ViewportScrollTarget of scroll target
+ * @param ref company or client id depending on the target
  * @return the cost of this operation or an error
  */
-CommandCost CmdScrollViewport(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const std::string &text)
+CommandCost CmdScrollViewport(DoCommandFlag flags, TileIndex tile, ViewportScrollTarget target, uint32 ref)
 {
 	if (_current_company != OWNER_DEITY) return CMD_ERROR;
-	ViewportScrollTarget target = (ViewportScrollTarget)p1;
 	switch (target) {
 		case VST_EVERYONE:
 			break;
 		case VST_COMPANY:
-			if (_local_company != (CompanyID)p2) return CommandCost();
+			if (_local_company != (CompanyID)ref) return CommandCost();
 			break;
 		case VST_CLIENT:
-			if (_network_own_client_id != (ClientID)p2) return CommandCost();
+			if (_network_own_client_id != (ClientID)ref) return CommandCost();
 			break;
 		default:
 			return CMD_ERROR;
@@ -3560,7 +3495,7 @@ CommandCost CmdScrollViewport(TileIndex tile, DoCommandFlag flags, uint32 p1, ui
 	return CommandCost();
 }
 
-static void MarkCatchmentTilesDirty()
+void MarkCatchmentTilesDirty()
 {
 	if (_viewport_highlight_town != nullptr) {
 		MarkWholeScreenDirty();

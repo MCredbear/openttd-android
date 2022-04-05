@@ -21,6 +21,7 @@
 #include "zoom_type.h"
 #include "openttd.h"
 #include "rail_gui.h"
+#include "signal_type.h"
 
 /* Used to validate sizes of "max" value in settings. */
 const size_t MAX_SLE_UINT8 = UINT8_MAX;
@@ -106,13 +107,6 @@ struct GUISettings {
 	bool   lost_vehicle_warn;                ///< if a vehicle can't find its destination, show a warning
 	uint8  order_review_system;              ///< perform order reviews on vehicles
 	bool   vehicle_income_warn;              ///< if a vehicle isn't generating income, show a warning
-	bool   vertical_toolbar;                 ///< main toolbar is split into two vertical toolbars
-	bool   compact_vertical_toolbar;         ///< compact mode for vertical toolbars, with more sub-menus
-	bool   build_confirmation;               ///< show confirmation dialog when building roads and stations
-	bool   windows_titlebars;                ///< show or hide titlebars for all windows to increase scrren space
-	bool   draw_mouse_cursor;                ///< draw mouse cursor, touchscreen does not generally need a mouse cursor, but mouse cursor shows currently selected build tool
-	bool   windows_decorations;              ///< draw ornament on all window edges
-	uint   min_button;                       ///< min size of most button widgets
 	bool   show_finances;                    ///< show finances at end of year
 	bool   sg_new_nonstop;                   ///< ttdpatch compatible nonstop handling read from pre v93 savegames
 	bool   new_nonstop;                      ///< ttdpatch compatible nonstop handling
@@ -138,7 +132,6 @@ struct GUISettings {
 	ZoomLevel zoom_max;                      ///< maximum zoom out level
 	ZoomLevel sprite_zoom_min;               ///< maximum zoom level at which higher-resolution alternative sprites will be used (if available) instead of scaling a lower resolution sprite
 	byte   autosave;                         ///< how often should we do autosaves?
-	byte   save_to_network;                  ///< backup all savegames to network
 	bool   threaded_saves;                   ///< should we do threaded saves?
 	bool   keep_all_autosave;                ///< name the autosave in a different way
 	bool   autosave_on_exit;                 ///< save an autosave when you quit the game, but do not ask "Do you really want to quit?"
@@ -154,6 +147,7 @@ struct GUISettings {
 	bool   pause_on_newgame;                 ///< whether to start new games paused or not
 	SignalGUISettings signal_gui_mode;       ///< select which signal types are shown in the signal GUI
 	SignalCycleSettings cycle_signal_types;  ///< Which signal types to cycle with the build signal tool.
+	SignalType default_signal_type;          ///< The default signal type, which is set automatically by the last signal used. Not available in Settings.
 	Year   coloured_news_year;               ///< when does newspaper become coloured?
 	bool   timetable_in_ticks;               ///< whether to show the timetable in ticks rather than days
 	bool   quick_goto;                       ///< Allow quick access to 'goto button' in vehicle orders window
@@ -250,6 +244,7 @@ struct NewsSettings {
 	uint8 arrival_player;                                 ///< NewsDisplay of vehicles arriving at new stations of current player
 	uint8 arrival_other;                                  ///< NewsDisplay of vehicles arriving at new stations of other players
 	uint8 accident;                                       ///< NewsDisplay of accidents that occur
+	uint8 accident_other;                                 ///< NewsDisplay if a vehicle from another company is involved in an accident
 	uint8 company_info;                                   ///< NewsDisplay of general company information
 	uint8 open;                                           ///< NewsDisplay on new industry constructions
 	uint8 close;                                          ///< NewsDisplay about closing industries
@@ -524,7 +519,7 @@ struct EconomySettings {
 	bool   allow_town_roads;                 ///< towns are allowed to build roads (always allowed when generating world / in SE)
 	TownFounding found_town;                 ///< town founding.
 	bool   station_noise_level;              ///< build new airports when the town noise level is still within accepted limits
-	uint16 town_noise_population[3];         ///< population to base decision on noise evaluation (@see town_council_tolerance)
+	uint16 town_noise_population[4];         ///< population to base decision on noise evaluation (@see town_council_tolerance)
 	bool   allow_town_level_crossings;       ///< towns are allowed to build level crossings
 	bool   infrastructure_maintenance;       ///< enable monthly maintenance fee for owner infrastructure
 };

@@ -1258,10 +1258,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Αλπικό
 STR_TERRAIN_TYPE_CUSTOM                                         :Προσαρμοσμένο ύψος
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Προσαρμοσμένο ύψος ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Ανεκτική
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Υπομονετική
 STR_CITY_APPROVAL_HOSTILE                                       :Εχθρική
+STR_CITY_APPROVAL_PERMISSIVE                                    :Ανεκτική
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Δεν είναι διαθέσιμο κανένα κατάλληλο Al...{}Μπορείτε να κατεβάσετε AIs μέσω του συστήματος «Διαδικτυακού Περιεχομένου»
 
@@ -1850,6 +1850,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Παρουσί�
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Ατυχήματα / καταστροφές: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Προβάλλει εφημερίδα όταν συμβαίνουν ατυχήματα ή καταστροφές
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Ατυχήματα των ανταγωνιστικών οχημάτων: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Εμφάνιση εφημερίδας για τα διαλυμένα οχήματα για τους ανταγωνιστές
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Πληροφορίες εταιρίας: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Προβάλλει εφημερίδα όταν αρχίζει νέα εταιρεία ή όταν οι εταιρίες ρισκάρουν χρεωκοπία
 
@@ -2364,6 +2367,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Τοπ�
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Μέγεθος χάρτη: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Έκδοση διακομιστή: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Διεύθυνση διακομιστή: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Κωδικός πρόσκλησης: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Ημερομηνία έναρξης: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Τρέχουσα ημερομηνία: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Script Παιχνιδιού: {WHITE}{STRING} (v{NUM})
@@ -2780,6 +2784,7 @@ STR_STATION_CLASS_WAYP                                          :Σημείο κ
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Επιλογή Σηματοδότη
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Εναλλαγή εμφάνισης προχωρημένων τύπων σηματοδοτών
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Σηματοδότες Τμήματος (σηματοφόρος){}Αυτός είναι ο πιο βασικός τύπος σηματοδότη, επιτρέποντας μόνο ένα τρένο να βρίσκεται σε κάθε τμήμα κάθε φορά
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Σηματοδότης-Εισόδου (σηματοφόρος){}Πράσινο όσο υπάρχει ένας ή περισσότεροι πράσινοι σηματοδότες-εξόδου στο επόμενο τμήμα γράμμης. Διαφορετικά δείχνει κόκκινο
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Σηματοδότης-Εξόδου (σηματοφόρος){}Συμπεριφέρεται με τον ίδιο τρόπο οπως οι σηματοδότες τμήματος αλλά είναι απαραίτητο να τεθεί το σωστό χρώμα στους προ-σηματοδότες είσοδου και συνδυαστικούς
@@ -5668,5 +5673,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

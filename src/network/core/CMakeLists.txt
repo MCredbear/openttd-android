@@ -5,8 +5,6 @@ add_files(
     config.h
     core.cpp
     core.h
-    em_proxy.cpp
-    em_proxy.h
     game_info.cpp
     game_info.h
     host.cpp

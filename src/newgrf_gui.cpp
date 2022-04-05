@@ -642,6 +642,7 @@ struct NewGRFWindow : public Window, NewGRFScanCallback {
 		this->vscroll2 = this->GetScrollbar(WID_NS_SCROLL2BAR);
 
 		this->GetWidget<NWidgetStacked>(WID_NS_SHOW_REMOVE)->SetDisplayedPlane(this->editable ? 0 : 1);
+		this->GetWidget<NWidgetStacked>(WID_NS_SHOW_APPLY)->SetDisplayedPlane(this->editable ? 0 : this->show_params ? 1 : SZSP_HORIZONTAL);
 		this->FinishInitNested(WN_GAME_OPTIONS_NEWGRF_STATE);
 
 		this->querystrings[WID_NS_FILTER] = &this->filter_editbox;
@@ -731,15 +732,13 @@ struct NewGRFWindow : public Window, NewGRFScanCallback {
 			{
 				Dimension d = maxdim(GetSpriteSize(SPR_SQUARE), GetSpriteSize(SPR_WARNING_SIGN));
 				resize->height = std::max(d.height + 2U, FONT_HEIGHT_NORMAL + 2U);
-				resize->height = GetMinButtonSize(resize->height);
-				size->height = std::max(size->height, WD_FRAMERECT_TOP + 4 * resize->height + WD_FRAMERECT_BOTTOM);
+				size->height = std::max(size->height, WD_FRAMERECT_TOP + 6 * resize->height + WD_FRAMERECT_BOTTOM);
 				break;
 			}
 
 			case WID_NS_AVAIL_LIST:
 				resize->height = std::max(12, FONT_HEIGHT_NORMAL + 2);
-				resize->height = GetMinButtonSize(resize->height);
-				size->height = std::max(size->height, WD_FRAMERECT_TOP + 4 * resize->height + WD_FRAMERECT_BOTTOM);
+				size->height = std::max(size->height, WD_FRAMERECT_TOP + 8 * resize->height + WD_FRAMERECT_BOTTOM);
 				break;
 
 			case WID_NS_NEWGRF_INFO_TITLE: {
@@ -760,7 +759,6 @@ struct NewGRFWindow : public Window, NewGRFScanCallback {
 					d = maxdim(d, GetStringBoundingBox(STR_JUST_RAW_STRING));
 				}
 				d.width += padding.width;
-				d.height = GetMinButtonSize(d.height);
 				*size = maxdim(d, *size);
 				break;
 			}
@@ -771,7 +769,6 @@ struct NewGRFWindow : public Window, NewGRFScanCallback {
 				*size = maxdim(d, GetStringBoundingBox(STR_INTRO_ONLINE_CONTENT));
 				size->width  += padding.width;
 				size->height += padding.height;
-				size->height = GetMinButtonSize(size->height);
 				break;
 			}
 		}
@@ -1623,8 +1620,8 @@ public:
 		uint min_inf_height = this->inf->smallest_y + this->inf->padding_top + this->inf->padding_bottom;
 
 		/* Smallest window is in two column mode. */
-		this->smallest_x = min_avs_width + min_acs_width + min_inf_width + INTER_COLUMN_SPACING * 2;
-		this->smallest_y = std::max(std::max(min_inf_height, min_acs_height), min_avs_height);
+		this->smallest_x = std::max(min_avs_width, min_acs_width) + INTER_COLUMN_SPACING + min_inf_width;
+		this->smallest_y = std::max(min_inf_height, min_acs_height + INTER_LIST_SPACING + min_avs_height);
 
 		/* Filling. */
 		this->fill_x = LeastCommonMultiple(this->avs->fill_x, this->acs->fill_x);
@@ -1661,7 +1658,7 @@ public:
 		/* Use 2 or 3 columns? */
 		uint min_three_columns = min_avs_width + min_acs_width + min_inf_width + 2 * INTER_COLUMN_SPACING;
 		uint min_two_columns   = min_list_width + min_inf_width + INTER_COLUMN_SPACING;
-		bool use_three_columns = true; // this->editable;
+		bool use_three_columns = this->editable && (min_three_columns + MIN_EXTRA_FOR_3_COLUMNS <= given_width);
 
 		/* Info panel is a separate column in both modes. Compute its width first. */
 		uint extra_width, inf_width;
@@ -1777,7 +1774,7 @@ public:
 
 	void Draw(const Window *w) override
 	{
-		this->avs->Draw(w);
+		if (this->editable) this->avs->Draw(w);
 		this->acs->Draw(w);
 		this->inf->Draw(w);
 	}
@@ -1893,23 +1890,20 @@ static const NWidgetPart _nested_newgrf_infopanel_widgets[] = {
 					SetDataTip(STR_TEXTFILE_VIEW_LICENCE, STR_NULL),
 		EndContainer(),
 	EndContainer(),
-	/* Right side, buttons. */
-	NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(0, WD_RESIZEBOX_WIDTH, 0),
-		NWidget(NWID_VERTICAL),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_YELLOW, WID_NS_SET_PARAMETERS), SetFill(1, 0), SetResize(1, 0),
-					SetDataTip(STR_NEWGRF_SETTINGS_SET_PARAMETERS, STR_NULL),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_YELLOW, WID_NS_TOGGLE_PALETTE), SetFill(1, 0), SetResize(1, 0),
-					SetDataTip(STR_NEWGRF_SETTINGS_TOGGLE_PALETTE, STR_NEWGRF_SETTINGS_TOGGLE_PALETTE_TOOLTIP),
-		EndContainer(),
-		NWidget(NWID_VERTICAL),
+	NWidget(NWID_SELECTION, INVALID_COLOUR, WID_NS_SHOW_APPLY),
+		/* Right side, buttons. */
+		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(0, WD_RESIZEBOX_WIDTH, 0),
+			NWidget(NWID_VERTICAL),
+				NWidget(WWT_PUSHTXTBTN, COLOUR_YELLOW, WID_NS_SET_PARAMETERS), SetFill(1, 0), SetResize(1, 0),
+						SetDataTip(STR_NEWGRF_SETTINGS_SET_PARAMETERS, STR_NULL),
+				NWidget(WWT_PUSHTXTBTN, COLOUR_YELLOW, WID_NS_TOGGLE_PALETTE), SetFill(1, 0), SetResize(1, 0),
+						SetDataTip(STR_NEWGRF_SETTINGS_TOGGLE_PALETTE, STR_NEWGRF_SETTINGS_TOGGLE_PALETTE_TOOLTIP),
+			EndContainer(),
 			NWidget(WWT_PUSHTXTBTN, COLOUR_YELLOW, WID_NS_APPLY_CHANGES), SetFill(1, 0), SetResize(1, 0),
 					SetDataTip(STR_NEWGRF_SETTINGS_APPLY_CHANGES, STR_NULL),
-			/* Resize button. */
-			NWidget(NWID_HORIZONTAL),
-				NWidget(NWID_SPACER), SetFill(1, 0), SetResize(1, 0),
-				NWidget(WWT_RESIZEBOX, COLOUR_MAUVE),
-			EndContainer(),
 		EndContainer(),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_YELLOW, WID_NS_VIEW_PARAMETERS), SetFill(1, 0), SetResize(1, 0),
+			SetDataTip(STR_NEWGRF_SETTINGS_SHOW_PARAMETERS, STR_NULL),
 	EndContainer(),
 };
 
@@ -1937,6 +1931,11 @@ static const NWidgetPart _nested_newgrf_widgets[] = {
 	EndContainer(),
 	NWidget(WWT_PANEL, COLOUR_MAUVE),
 		NWidgetFunction(NewGRFDisplay), SetPadding(WD_RESIZEBOX_WIDTH, WD_RESIZEBOX_WIDTH, 2, WD_RESIZEBOX_WIDTH),
+		/* Resize button. */
+		NWidget(NWID_HORIZONTAL),
+			NWidget(NWID_SPACER), SetFill(1, 0), SetResize(1, 0),
+			NWidget(WWT_RESIZEBOX, COLOUR_MAUVE),
+		EndContainer(),
 	EndContainer(),
 };
 
@@ -2158,7 +2157,6 @@ static void ShowSavePresetWindow(const char *initial_text)
 /** Widgets for the progress window. */
 static const NWidgetPart _nested_scan_progress_widgets[] = {
 	NWidget(WWT_CAPTION, COLOUR_GREY), SetDataTip(STR_NEWGRF_SCAN_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
-			SetSizingType(NWST_BUTTON),
 	NWidget(WWT_PANEL, COLOUR_GREY),
 		NWidget(NWID_HORIZONTAL), SetPIP(20, 0, 20),
 			NWidget(NWID_VERTICAL), SetPIP(11, 8, 11),

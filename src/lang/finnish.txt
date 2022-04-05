@@ -1151,10 +1151,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Vuorikiipeilij�
 STR_TERRAIN_TYPE_CUSTOM                                         :Oma korkeus
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Oma korkeus ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Salliva
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Suvaitseva
 STR_CITY_APPROVAL_HOSTILE                                       :Vihamielinen
+STR_CITY_APPROVAL_PERMISSIVE                                    :Salliva
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Ei soveltuvia tekoälyjä saatavilla...{}Voit ladata tekoälyjä ”online-sisältö” -palvelulla
 
@@ -1743,6 +1743,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Näytä sanomal
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Vahingot/onnettomuudet: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Näytä sanomalehti vahingon tai onnettomuuden sattuessa
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Kilpailijan kulkuneuvojen vahingot: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Näytä sanomalehti vahingon sattuessa kilpailijan kulkuneuvoille
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Yhtiön tiedot: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Näytä sanomalehti kun uusi yhtiö aloittaa toimintansa tai kun jokin yhtiö on lähellä konkurssia
 
@@ -2257,6 +2260,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Maasto:
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Kartan koko: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Palvelimen versio: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Palvelimen osoite: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Kutsukoodi: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Aloitusvuosi: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Päivämäärä: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Peliskripti: {WHITE}{STRING} (v.{NBSP}{NUM})
@@ -2673,6 +2677,7 @@ STR_STATION_CLASS_WAYP                                          :Reittipisteet
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Opastimien valinta
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Edistyneiden opastintyyppien näyttäminen
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Suojastusopastin (siipiopastin){}Kaikkein alkeellisin opastin, joka sallii vain yhden junan samalla osuudella kerrallaan
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Tulo-opastin (siipiopastin){}Näyttää vihreää aina, kun yksi tai useampi seuraavista poistumisopastimista näyttää vihreää. Muutoin se näyttää punaista
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Poistumisopastin (siipiopastin){}Käyttäytyy samalla tavalla kuin suojastusopastin, mutta on välttämätön oikean valon näyttämiseen tulo- ja yhdistelmäopastimissa
@@ -5551,5 +5556,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

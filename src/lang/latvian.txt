@@ -328,6 +328,8 @@ STR_GROUP_BY_NONE                                               :Nav
 STR_GROUP_BY_SHARED_ORDERS                                      :Koplietojamie rīkojumi
 
 # Order button in shared orders vehicle list
+STR_GOTO_ORDER_VIEW                                             :{BLACK}Pasūtījumi
+STR_GOTO_ORDER_VIEW_TOOLTIP                                     :{BLACK}Atvērt pasūtījumu skatu
 
 # Tooltips for the main toolbar
 ###length 31
@@ -1151,10 +1153,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alpu
 STR_TERRAIN_TYPE_CUSTOM                                         :Pielāgots augstums
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Pielāgots augstums ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :pieļaujoša
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :iecietīga
 STR_CITY_APPROVAL_HOSTILE                                       :naidīga
+STR_CITY_APPROVAL_PERMISSIVE                                    :pieļaujoša
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Nav pieejami derīgi MI...{}Jūs varat lejuplādēt dažādus MI, izmantojot sistēmu 'Tiešsaistes saturs'
 
@@ -1743,6 +1745,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Rādīt avīzi 
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Negadījumi / katastrofas: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Rādīt avīzi, kad notiek nelaimes gadījumi vai katastrofas
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Konkuretu transportlīdzekļu negadījumi: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Rādīt avīzi par konkuretu transportlīdzekļu negadījumiem
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Uzņēmuma informācija: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Rādīt avīzi kad darbību sāk jauns uzņēmums, vai kad uzņēmumi riskē bankrotēt
 
@@ -2259,6 +2264,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Ainava:
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Kartes izmērs: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Servera versija: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Servera adrese: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Uzaicinājuma kods: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Sākuma datums: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Šībrīža datums: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Spēles Skripts: {WHITE}{STRING} (v{NUM})
@@ -2329,6 +2335,7 @@ STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Uzņēmu
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Spēlētāji tiešsaistē
+STR_NETWORK_COMPANY_LIST_SPECTATE                               :Skatīt
 
 # Network client list
 STR_NETWORK_CLIENT_LIST_CAPTION                                 :{WHITE}Tiešsaistes spēlētāji
@@ -2413,6 +2420,7 @@ STR_NETWORK_CHAT_TO_COMPANY                                     :[Komanda] Uz {S
 STR_NETWORK_CHAT_CLIENT                                         :[Privāti] {STRING}: {WHITE}{STRING}
 STR_NETWORK_CHAT_TO_CLIENT                                      :[Privāti] Uz {STRING}: {WHITE}{STRING}
 STR_NETWORK_CHAT_ALL                                            :[Visiem] {STRING}: {WHITE}{STRING}
+STR_NETWORK_CHAT_EXTERNAL                                       :[{3:STRING}] {0:STRING}: {WHITE}{1:STRING}
 STR_NETWORK_CHAT_OSKTITLE                                       :{BLACK}Ievadīt tekstu tīkla tērzēšanai
 
 # Network messages
@@ -2673,6 +2681,7 @@ STR_STATION_CLASS_WAYP                                          :Pieturas punkti
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Signāla izvēle
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Pārslēdziet papildu signālu veidu rādīšanu
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Bloka signālierīce (semafors){}Šis ir pats vienkāršākais signālierīces veids, kas ļauj uz bloka vienlaicīgi atrasties tikai vienam vilcienam
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Ieejas signālierīce (semafors){}Zaļš kamēr ir viens vai vairāki zaļi izejas signāli no sekojošās sliežu sekcijas. Citādi signāls būs sarkans
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Izejas signālierīce (semafors){}Uzvedas tāpat kā bloka signālierīce, bet tā ir nepieciešama, lai pirmssignālu ierīces rādītu pareizās krāsas
@@ -4150,6 +4159,10 @@ STR_VEHICLE_STATUS_HEADING_FOR_WAYPOINT_VEL                     :{LTBLUE}Dodas u
 STR_VEHICLE_STATUS_HEADING_FOR_DEPOT_VEL                        :{ORANGE}Dodas uz {DEPOT}, {VELOCITY}
 STR_VEHICLE_STATUS_HEADING_FOR_DEPOT_SERVICE_VEL                :{LTBLUE}Veikt apkopi {DEPOT}, {VELOCITY}
 
+STR_VEHICLE_STATUS_CANNOT_REACH_STATION_VEL                     :{LTBLUE}Nevar sasniegt {STATION}, {VELOCITY}
+STR_VEHICLE_STATUS_CANNOT_REACH_WAYPOINT_VEL                    :{LTBLUE}Nevar sasniegt {WAYPOINT}, {VELOCITY}
+STR_VEHICLE_STATUS_CANNOT_REACH_DEPOT_VEL                       :{ORANGE}Nevar sasniegt {DEPOT}, {VELOCITY}
+STR_VEHICLE_STATUS_CANNOT_REACH_DEPOT_SERVICE_VEL               :{LTBLUE}Nevar sasniegt {DEPOT}, {VELOCITY}
 
 # Vehicle stopped/started animations
 ###length 2
@@ -5554,5 +5567,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings

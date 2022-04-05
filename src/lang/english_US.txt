@@ -1151,10 +1151,10 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alpinist
 STR_TERRAIN_TYPE_CUSTOM                                         :Custom height
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Custom height ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Permissive
+###length 4
 STR_CITY_APPROVAL_TOLERANT                                      :Tolerant
 STR_CITY_APPROVAL_HOSTILE                                       :Hostile
+STR_CITY_APPROVAL_PERMISSIVE                                    :Permissive
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}No suitable AIs available...{}You can download several AIs via the 'Online Content' system
 
@@ -1743,6 +1743,9 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Display a newsp
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Accidents / disasters: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Display a newspaper when accidents or disasters occur
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Accidents of competitor's vehicles: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Display a newspaper about crashed vehicles for competitors
+
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Company information: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Display a newspaper when a new company starts, or when companies are at risk of going bankrupt
 
@@ -2257,6 +2260,7 @@ STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Landsca
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Map size: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Server version: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_SERVER_ADDRESS                          :{SILVER}Server address: {WHITE}{STRING}
+STR_NETWORK_SERVER_LIST_INVITE_CODE                             :{SILVER}Invite code: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_START_DATE                              :{SILVER}Start date: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_CURRENT_DATE                            :{SILVER}Current date: {WHITE}{DATE_SHORT}
 STR_NETWORK_SERVER_LIST_GAMESCRIPT                              :{SILVER}Game Script: {WHITE}{STRING} (v{NUM})
@@ -2673,6 +2677,7 @@ STR_STATION_CLASS_WAYP                                          :Waypoints
 
 # Signal window
 STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}Signal Selection
+STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}Toggle showing advanced signal types
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}Block Signal (semaphore){}This is the most basic type of signal, allowing only one train to be in the same block at the same time
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}Entry Signal (semaphore){}Green as long as there is one or more green exit-signal from the following section of track. Otherwise it shows red
 STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}Exit Signal (semaphore){}Behaves in the same way as a block signal but is necessary to trigger the correct color on entry & combo pre-signals
@@ -5551,5 +5556,3 @@ STR_PLANE                                                       :{BLACK}{PLANE}
 STR_SHIP                                                        :{BLACK}{SHIP}
 
 STR_TOOLBAR_RAILTYPE_VELOCITY                                   :{STRING} ({VELOCITY})
-
-# Android strings
